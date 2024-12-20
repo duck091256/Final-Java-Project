@@ -21,7 +21,7 @@ import javax.swing.JPasswordField;
 import java.awt.Color;
 import java.awt.Font;
 
-public class Main extends JFrame {
+public class Login extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
@@ -38,7 +38,7 @@ public class Main extends JFrame {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    Main frame = new Main();
+                    Login frame = new Login();
                     frame.setUndecorated(true); // Ẩn thanh tiêu đề
                     frame.setVisible(true);
                 } catch (Exception e) {
@@ -48,9 +48,9 @@ public class Main extends JFrame {
         });
     }
 
-    public Main() {
+    public Login() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 700, 399);
+        setBounds(100, 100, 700, 394);
         setLocationRelativeTo(null);
 
         contentPane = new JPanel();
@@ -136,7 +136,7 @@ public class Main extends JFrame {
         contentPane.add(lbl_Login);
 
         JLabel label = new JLabel(new ImageIcon(scaledImage));
-        label.setBounds(5, 5, 700, 394);
+        label.setBounds(0, 0, 700, 394);
         contentPane.add(label);
 
         setContentPane(contentPane);

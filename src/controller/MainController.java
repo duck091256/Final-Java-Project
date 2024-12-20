@@ -12,6 +12,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import data_access_object.*;
+import view.OrderingSystem;
 
 public class MainController {
 	
@@ -86,8 +87,9 @@ public class MainController {
                     JFrame currentFrame = (JFrame) SwingUtilities.getWindowAncestor(lbl_Login);
                     currentFrame.dispose();
 
-                    // OrderingSystem orderingSystem = new OrderingSystem();
-                    // orderingSystem.setVisible(true);
+                    OrderingSystem orderingSystem = new OrderingSystem();
+                    orderingSystem.setUndecorated(true);
+                    orderingSystem.setVisible(true);
                 } else {
                     JOptionPane.showMessageDialog(null, "Đăng nhập thất bại!");
                 }

@@ -3,7 +3,7 @@ package database;
 import java.sql.Connection;
 public class Test {
 	public static void main(String[] args) {
-		Connection connection = JDBCUtil.getConnection();
+		Connection connection = GetSQLSever.getConnection();
 		
 		if(connection != null) {
 			System.out.println("Kết nối thành công!");

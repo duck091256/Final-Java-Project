@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 
 public class GetSQLSever {
-    private static final String DB_severName = "TRINH-CONG-KIEN";
+    private static final String DB_severName = "192.168.1.10";
     private static final String DB_login = "sa";
     private static final String DB_password = "123456";
     private static final String DB_databaseName = "myDB";

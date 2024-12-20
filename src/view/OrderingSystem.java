@@ -21,7 +21,6 @@ import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-import javax.swing.border.EmptyBorder;
 
 import fx.*;
 import controller.*;
@@ -30,6 +29,7 @@ public class OrderingSystem extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
+    private JLabel backgroundLabel;
     private JPanel cardPanelLeft, cardPanelRight;
     private JPanel floor1PanelLeft, floor1PanelRight;
     private JPanel floor2PanelLeft, floor2PanelRight;
@@ -40,6 +40,9 @@ public class OrderingSystem extends JFrame {
     private JPanel subCardPanelLeft, subCardPanelRight;
     private Point mouseClickPoint;
     private OperatingSystemController controller;
+    private RoundedLabelEffect currentTableSeatLabel1, currentTableSeatLabel2;
+    private int x1, y1, x2, y2;
+    private Boolean checkTabExist1 = true, checkTabExist2 = true;
 
 	/**
 	 * Launch the application.
@@ -61,9 +64,8 @@ public class OrderingSystem extends JFrame {
 		setBounds(100, 100, 900, 506);
 		setLocationRelativeTo(null);
 		contentPane = new JPanel(null);
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		setContentPane(contentPane); 
-
+		contentPane.setBorder(BorderFactory.createLineBorder(new Color(45, 61, 75), 5));
+		setContentPane(contentPane);
 		controller = new OperatingSystemController();
 		
 		// Thêm ảnh nền
@@ -185,13 +187,105 @@ public class OrderingSystem extends JFrame {
             Table.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    floor1PanelRight.removeAll();
-                    JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber);
-                    tableLabel.setBounds(20, 20, 300, 30);
-                    tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
-                    floor1PanelRight.add(tableLabel);
-                    floor1PanelRight.repaint();
-                    floor1PanelRight.revalidate();
+                	// Xóa RoundedLabelEffect cũ nếu nó tồn tại
+                	if (currentTableSeatLabel1 != null) {
+                        contentPane.remove(currentTableSeatLabel1);
+                    }
+                	if (checkTabExist1) {
+                		if (currentTableSeatLabel2 != null) {
+                            // Tạo Tab Rounded Label "Phòng bàn" mới
+                            RoundedLabelEffect rlbl_tableSeat = new RoundedLabelEffect("Bàn " + tableNumber + " - Tầng 1");
+                            rlbl_tableSeat.setBounds(575, 11, 110, 31);
+                            rlbl_tableSeat.setBackground(new Color(255, 255, 255));
+                            rlbl_tableSeat.setForeground(new Color(166, 166, 166));
+                            rlbl_tableSeat.setHorizontalAlignment(SwingConstants.CENTER);
+                            rlbl_tableSeat.setFont(new Font("Arial", Font.BOLD, 14));
+                            rlbl_tableSeat.setCornerRadius(10);
+                            
+                            // Lưu vị trí cố định của "Phòng bàn" lần tới
+                            x1 = rlbl_tableSeat.getX();
+                            y1 = rlbl_tableSeat.getY();
+                            
+                            // Thay đổi trạng thái checkTabExist
+                            checkTabExist1 = false;
+                            
+                            currentTableSeatLabel1 = rlbl_tableSeat;
+
+                            contentPane.add(rlbl_tableSeat);
+
+                            contentPane.setComponentZOrder(backgroundLabel, contentPane.getComponentCount() - 1);
+                            
+                            contentPane.revalidate();
+                            contentPane.repaint();
+
+                            floor1PanelRight.removeAll();
+                            JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 1");
+                            tableLabel.setBounds(20, 20, 300, 30);
+                            tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                            floor1PanelRight.add(tableLabel);
+                            floor1PanelRight.repaint();
+                            floor1PanelRight.revalidate();
+                    	} else {
+                    		// Tạo Tab Rounded Label "Phòng bàn" mới
+                            RoundedLabelEffect rlbl_tableSeat = new RoundedLabelEffect("Bàn " + tableNumber + " - Tầng 1");
+                            rlbl_tableSeat.setBounds(460, 11, 110, 31);
+                            rlbl_tableSeat.setBackground(new Color(255, 255, 255));
+                            rlbl_tableSeat.setForeground(new Color(166, 166, 166));
+                            rlbl_tableSeat.setHorizontalAlignment(SwingConstants.CENTER);
+                            rlbl_tableSeat.setFont(new Font("Arial", Font.BOLD, 14));
+                            rlbl_tableSeat.setCornerRadius(10);
+                            
+                            // Lưu vị trí cố định của "Phòng bàn" lần tới
+                            x1 = rlbl_tableSeat.getX();
+                            y1 = rlbl_tableSeat.getY();
+                            
+                            // Thay đổi trạng thái checkTabExist
+                            checkTabExist1 = false;
+                            
+                            currentTableSeatLabel1 = rlbl_tableSeat;
+
+                            contentPane.add(rlbl_tableSeat);
+
+                            contentPane.setComponentZOrder(backgroundLabel, contentPane.getComponentCount() - 1);
+                            
+                            contentPane.revalidate();
+                            contentPane.repaint();
+
+                            floor1PanelRight.removeAll();
+                            JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 1");
+                            tableLabel.setBounds(20, 20, 300, 30);
+                            tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                            floor1PanelRight.add(tableLabel);
+                            floor1PanelRight.repaint();
+                            floor1PanelRight.revalidate();
+                    	}
+                	} else {
+                		// Tạo Tab Rounded Label "Phòng bàn" mới
+                        RoundedLabelEffect rlbl_tableSeat = new RoundedLabelEffect("Bàn " + tableNumber + " - Tầng 1");
+                        rlbl_tableSeat.setBounds(x1, y1, 110, 31);
+                        rlbl_tableSeat.setBackground(new Color(255, 255, 255));
+                        rlbl_tableSeat.setForeground(new Color(166, 166, 166));
+                        rlbl_tableSeat.setHorizontalAlignment(SwingConstants.CENTER);
+                        rlbl_tableSeat.setFont(new Font("Arial", Font.BOLD, 14));
+                        rlbl_tableSeat.setCornerRadius(10);
+                        
+                        currentTableSeatLabel1 = rlbl_tableSeat;
+
+                        contentPane.add(rlbl_tableSeat);
+
+                        contentPane.setComponentZOrder(backgroundLabel, contentPane.getComponentCount() - 1);
+                        
+                        contentPane.revalidate();
+                        contentPane.repaint();
+
+                        floor1PanelRight.removeAll();
+                        JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 1");
+                        tableLabel.setBounds(20, 20, 300, 30);
+                        tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                        floor1PanelRight.add(tableLabel);
+                        floor1PanelRight.repaint();
+                        floor1PanelRight.revalidate();
+                	}
                 }
             });
             
@@ -224,13 +318,105 @@ public class OrderingSystem extends JFrame {
             Table.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    floor2PanelRight.removeAll();
-                    JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber);
-                    tableLabel.setBounds(20, 20, 300, 30);
-                    tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
-                    floor2PanelRight.add(tableLabel);
-                    floor2PanelRight.repaint();
-                    floor2PanelRight.revalidate();
+                	// Xóa RoundedLabelEffect cũ nếu nó tồn tại
+                    if (currentTableSeatLabel2 != null) {
+                        contentPane.remove(currentTableSeatLabel2);
+                    }
+                    if (checkTabExist2) {
+                    	if (currentTableSeatLabel1 != null) {
+                            // Tạo Tab Rounded Label "Phòng bàn" mới
+                            RoundedLabelEffect rlbl_tableSeat = new RoundedLabelEffect("Bàn " + tableNumber + " - Tầng 2");
+                            rlbl_tableSeat.setBounds(575, 11, 110, 31);
+                            rlbl_tableSeat.setBackground(new Color(255, 255, 255));
+                            rlbl_tableSeat.setForeground(new Color(166, 166, 166));
+                            rlbl_tableSeat.setHorizontalAlignment(SwingConstants.CENTER);
+                            rlbl_tableSeat.setFont(new Font("Arial", Font.BOLD, 14));
+                            rlbl_tableSeat.setCornerRadius(10);
+                            
+                            // Lưu vị trí cố định của "Phòng bàn" lần tới
+                            x2 = rlbl_tableSeat.getX();
+                            y2 = rlbl_tableSeat.getY();
+                            
+                            // Thay đổi trạng thái checkTabExist
+                            checkTabExist2 = false;
+                            
+                            currentTableSeatLabel2 = rlbl_tableSeat;
+
+                            contentPane.add(rlbl_tableSeat);
+
+                            contentPane.setComponentZOrder(backgroundLabel, contentPane.getComponentCount() - 1);
+                            
+                            contentPane.revalidate();
+                            contentPane.repaint();
+
+                            floor2PanelRight.removeAll();
+                            JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 2");
+                            tableLabel.setBounds(20, 20, 300, 30);
+                            tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                            floor2PanelRight.add(tableLabel);
+                            floor2PanelRight.repaint();
+                            floor2PanelRight.revalidate();
+                        } else {
+                        	// Tạo Tab Rounded Label "Phòng bàn" mới
+                            RoundedLabelEffect rlbl_tableSeat = new RoundedLabelEffect("Bàn " + tableNumber + " - Tầng 2");
+                            rlbl_tableSeat.setBounds(460, 11, 110, 31);
+                            rlbl_tableSeat.setBackground(new Color(255, 255, 255));
+                            rlbl_tableSeat.setForeground(new Color(166, 166, 166));
+                            rlbl_tableSeat.setHorizontalAlignment(SwingConstants.CENTER);
+                            rlbl_tableSeat.setFont(new Font("Arial", Font.BOLD, 14));
+                            rlbl_tableSeat.setCornerRadius(10);
+
+                            // Lưu vị trí cố định của "Phòng bàn" lần tới
+                            x2 = rlbl_tableSeat.getX();
+                            y2 = rlbl_tableSeat.getY();
+                            
+                            // Thay đổi trạng thái checkTabExist
+                            checkTabExist2 = false;
+                            
+                            currentTableSeatLabel2 = rlbl_tableSeat;
+
+                            contentPane.add(rlbl_tableSeat);
+
+                            contentPane.setComponentZOrder(backgroundLabel, contentPane.getComponentCount() - 1);
+                            
+                            contentPane.revalidate();
+                            contentPane.repaint();
+
+                            floor2PanelRight.removeAll();
+                            JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 2");
+                            tableLabel.setBounds(20, 20, 300, 30);
+                            tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                            floor2PanelRight.add(tableLabel);
+                            floor2PanelRight.repaint();
+                            floor2PanelRight.revalidate();
+                        }
+                    } else {
+                    	// Tạo Tab Rounded Label "Phòng bàn" mới
+                        RoundedLabelEffect rlbl_tableSeat = new RoundedLabelEffect("Bàn " + tableNumber + " - Tầng 2");
+                        rlbl_tableSeat.setBounds(x2, y2, 110, 31);
+                        rlbl_tableSeat.setBackground(new Color(255, 255, 255));
+                        rlbl_tableSeat.setForeground(new Color(166, 166, 166));
+                        rlbl_tableSeat.setHorizontalAlignment(SwingConstants.CENTER);
+                        rlbl_tableSeat.setFont(new Font("Arial", Font.BOLD, 14));
+                        rlbl_tableSeat.setCornerRadius(10);
+                        
+                        currentTableSeatLabel2 = rlbl_tableSeat;
+
+                        contentPane.add(rlbl_tableSeat);
+
+                        contentPane.setComponentZOrder(backgroundLabel, contentPane.getComponentCount() - 1);
+                        
+                        contentPane.revalidate();
+                        contentPane.repaint();
+
+                        floor2PanelRight.removeAll();
+                        JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 2");
+                        tableLabel.setBounds(20, 20, 300, 30);
+                        tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                        floor2PanelRight.add(tableLabel);
+                        floor2PanelRight.repaint();
+                        floor2PanelRight.revalidate();
+                    }
                 }
             });
 
@@ -312,15 +498,32 @@ public class OrderingSystem extends JFrame {
 		floor1LabelRight2.setBounds(10, 234, 429, 30);
 		floor1PanelRight.add(floor1LabelRight2);
 
-		floor2PanelRight = new JPanel(null);
-		floor2PanelRight.setBackground(new Color(200, 250, 200));
-
 		subCardPanelRight.add(floor1PanelRight, "Tầng 1");
 		
-		JLabel lblNewLabel = new JLabel("");
-		lblNewLabel.setIcon(new ImageIcon(OrderingSystem.class.getResource("/icon/icons8-table-50.png")));
-		lblNewLabel.setBounds(199, 148, 50, 50);
-		floor1PanelRight.add(lblNewLabel);
+		JLabel TableImage1 = new JLabel("");
+		TableImage1.setIcon(new ImageIcon(OrderingSystem.class.getResource("/icon/icons8-table-50.png")));
+		TableImage1.setBounds(199, 148, 50, 50);
+		floor1PanelRight.add(TableImage1);
+		
+		floor2PanelRight = new JPanel(null);
+		floor2PanelRight.setBackground(new Color(200, 250, 200));
+		JLabel floor2LabelRight1 = new JLabel("Hiện không có bàn nào được chọn");
+		floor2LabelRight1.setHorizontalAlignment(SwingConstants.CENTER);
+		JLabel floor2LabelRight2 = new JLabel("Nhấn vào biểu tượng bàn bên trái đến bắt đầu gọi món!");
+		floor2LabelRight2.setHorizontalAlignment(SwingConstants.CENTER);
+		
+		floor2LabelRight1.setFont(new Font("Arial", Font.BOLD, 20));
+		floor2LabelRight1.setBounds(10, 209, 429, 30);
+		floor2PanelRight.add(floor2LabelRight1);
+		floor2LabelRight2.setFont(new Font("Arial", Font.PLAIN, 16));
+		floor2LabelRight2.setBounds(10, 234, 429, 30);
+		floor2PanelRight.add(floor2LabelRight2);
+		
+		JLabel TableImage2 = new JLabel("");
+		TableImage2.setIcon(new ImageIcon(OrderingSystem.class.getResource("/icon/icons8-table-50.png")));
+		TableImage2.setBounds(199, 148, 50, 50);
+		floor2PanelRight.add(TableImage2);
+
 		subCardPanelRight.add(floor2PanelRight, "Tầng 2");
 
 		layeredPaneRight.add(subCardPanelRight, JLayeredPane.DEFAULT_LAYER);
@@ -337,9 +540,10 @@ public class OrderingSystem extends JFrame {
 		menuPanelRight.add(menuLabelRight);
 		cardPanelRight.add(menuPanelRight, "Thực đơn");
 		
-		JLabel backgroundLabel = new JLabel(new ImageIcon(scaledImage));
+		backgroundLabel = new JLabel(new ImageIcon(scaledImage));
 		backgroundLabel.setBounds(0, -1, 900, 506);
 		contentPane.add(backgroundLabel);
+		contentPane.setBorder(BorderFactory.createLineBorder(new Color(45, 61, 75), 5));
 		
 		// Bo viền
 		floorSelectorLeft.setBorder(new RoundedBorder(10));

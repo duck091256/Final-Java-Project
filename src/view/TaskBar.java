@@ -8,6 +8,9 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+
+/* class này vô nghĩa nha ae */
+
 public class TaskBar extends JPanel {
 
     public TaskBar() {

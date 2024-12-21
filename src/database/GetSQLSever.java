@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 
 public class GetSQLSever {
     private static final String DB_severName = "192.168.1.10";
+    private static final String DB_instanceName = "MSSQLSERVER_PHOE";
     private static final String DB_login = "sa";
     private static final String DB_password = "123456";
     private static final String DB_databaseName = "myDB";
@@ -12,7 +13,7 @@ public class GetSQLSever {
     public static Connection getConnection() {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            String url = "jdbc:sqlserver://" + DB_severName + ":1433;" + "databaseName=" + DB_databaseName
+            String url = "jdbc:sqlserver://" + DB_severName + "\\" + DB_instanceName + ":1433;" + "databaseName=" + DB_databaseName
                     + "; encrypt = true; trustServerCertificate = true";
 
             return DriverManager.getConnection(url, DB_login, DB_password);

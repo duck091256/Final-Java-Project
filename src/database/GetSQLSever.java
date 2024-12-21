@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 
 public class GetSQLSever {
-    private static final String DB_severName = "192.168.1.10";
+    private static final String DB_severName = "26.177.116.29";
     private static final String DB_instanceName = "MSSQLSERVER_PHOE";
     private static final String DB_login = "sa";
     private static final String DB_password = "123456";

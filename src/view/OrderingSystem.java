@@ -43,6 +43,8 @@ public class OrderingSystem extends JFrame {
     private RoundedLabelEffect currentTableSeatLabel1, currentTableSeatLabel2;
     private int x1, y1, x2, y2;
     private Boolean checkTabExist1 = true, checkTabExist2 = true;
+    private RoundedLabelEffect rlbl_menu, rlbl_table;
+    private Boolean checkTabTable = false, checkTabMenu = true;
 
 	/**
 	 * Launch the application.
@@ -74,7 +76,7 @@ public class OrderingSystem extends JFrame {
 		Image scaledImage = image.getScaledInstance(900, 506, Image.SCALE_SMOOTH);
 
 		// Rounded Label "Thực đơn"
-		RoundedLabelEffect rlbl_menu = new RoundedLabelEffect("Thực đơn");
+		rlbl_menu = new RoundedLabelEffect("Thực đơn");
 		rlbl_menu.setBounds(114, 11, 100, 31);
 		rlbl_menu.setBackground(new Color(255, 255, 255));
 		rlbl_menu.setForeground(new Color(166, 166, 166));
@@ -85,8 +87,15 @@ public class OrderingSystem extends JFrame {
 		rlbl_menu.addMouseListener(new MouseAdapter() {
 			@Override
             public void mouseClicked(MouseEvent e) {
+				// Set màu tab phòng bàn
+				rlbl_table.setBackground(new Color(45, 61, 75));
+				rlbl_table.setForeground(new Color(255, 255, 255));
+				rlbl_table.setFont(new Font("Arial", Font.PLAIN, 14));
+				
                 cardLayoutLeft.show(cardPanelLeft, "Thực đơn");
-                cardLayoutRight.show(cardPanelRight, "Thực đơn");
+//                cardLayoutRight.show(cardPanelRight, "Thực đơn");
+                checkTabMenu = false;
+                checkTabTable = true;
             }
 
 			@Override
@@ -95,29 +104,38 @@ public class OrderingSystem extends JFrame {
 				rlbl_menu.setForeground(new Color(166, 166, 166));
 				rlbl_menu.setFont(new Font("Arial", Font.BOLD, 14));
 			}
-
+			
 			@Override
 			public void mouseExited(MouseEvent e) {
-				rlbl_menu.setBackground(new Color(45, 61, 75));
-				rlbl_menu.setForeground(new Color(255, 255, 255));
-				rlbl_menu.setFont(new Font("Arial", Font.PLAIN, 14));
+				if (checkTabMenu) {
+					rlbl_menu.setBackground(new Color(45, 61, 75));
+					rlbl_menu.setForeground(new Color(255, 255, 255));
+					rlbl_menu.setFont(new Font("Arial", Font.PLAIN, 14));
+				}
 			}
 		});
 
 		// Rounded Label "Phòng bàn"
-		RoundedLabelEffect rlbl_table = new RoundedLabelEffect("Phòng bàn");
+		rlbl_table = new RoundedLabelEffect("Phòng bàn");
 		rlbl_table.setBounds(10, 11, 100, 31);
-		rlbl_table.setBackground(new Color(45, 61, 75));
-		rlbl_table.setForeground(new Color(255, 255, 255));
+		rlbl_table.setBackground(new Color(255, 255, 255));
+		rlbl_table.setForeground(new Color(166, 166, 166));
+		rlbl_table.setFont(new Font("Arial", Font.BOLD, 14));
 		rlbl_table.setHorizontalAlignment(SwingConstants.CENTER);
-		rlbl_table.setFont(new Font("Arial", Font.PLAIN, 14));
 		rlbl_table.setCornerRadius(10);
 
 		rlbl_table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+            	// Set màu tab menu
+            	rlbl_menu.setBackground(new Color(45, 61, 75));
+				rlbl_menu.setForeground(new Color(255, 255, 255));
+				rlbl_menu.setFont(new Font("Arial", Font.PLAIN, 14));
+				
                 cardLayoutLeft.show(cardPanelLeft, "Phòng bàn");
                 cardLayoutRight.show(cardPanelRight, "Phòng bàn");
+                checkTabTable = false;
+                checkTabMenu = true;
             }
 
 			@Override
@@ -129,9 +147,11 @@ public class OrderingSystem extends JFrame {
 
 			@Override
 			public void mouseExited(MouseEvent e) {
-				rlbl_table.setBackground(new Color(45, 61, 75));
-				rlbl_table.setForeground(new Color(255, 255, 255));
-				rlbl_table.setFont(new Font("Arial", Font.PLAIN, 14));
+				if (checkTabTable) {
+					rlbl_table.setBackground(new Color(45, 61, 75));
+					rlbl_table.setForeground(new Color(255, 255, 255));
+					rlbl_table.setFont(new Font("Arial", Font.PLAIN, 14));	
+				}
 			}
 		});
 		
@@ -180,13 +200,34 @@ public class OrderingSystem extends JFrame {
             Table.setBackground(Color.WHITE);
             Table.setPreferredSize(new Dimension(100, 100));
             Table.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-            Table.add(new JLabel("Bàn " + i));
+            JLabel lbl_tableNum1 = new JLabel("Bàn " + i + ": Trống");
+            Table.add(lbl_tableNum1);
             
             // Chức nâng nhấn và hiển thị bàn sang màn hình tay phải
             int tableNumber = i;
             Table.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
+                	
+                	// Màu mè tí 
+                	rlbl_menu.setBackground(new Color(255, 255, 255));
+    				rlbl_menu.setForeground(new Color(166, 166, 166));
+    				rlbl_menu.setFont(new Font("Arial", Font.BOLD, 14));
+    				rlbl_table.setBackground(new Color(45, 61, 75));
+					rlbl_table.setForeground(new Color(255, 255, 255));
+					rlbl_table.setFont(new Font("Arial", Font.PLAIN, 14));
+					checkTabMenu = false;
+					checkTabTable = true;
+                	
+                	// Set viền bàn thành màu đỏ
+                	Table.setBorder(new RoundedBorderPanel(15, new Color(192, 32, 39), 2));
+                	
+                	// Set văn bản hiển thị trên ô của bàn đó
+                	lbl_tableNum1.setText("Bàn " + tableNumber + ": Đang phục vụ");
+                	
+                	// Gọi trang menu
+                	cardLayoutLeft.show(cardPanelLeft, "Thực đơn");
+                	
                 	// Xóa RoundedLabelEffect cũ nếu nó tồn tại
                 	if (currentTableSeatLabel1 != null) {
                         contentPane.remove(currentTableSeatLabel1);
@@ -219,10 +260,10 @@ public class OrderingSystem extends JFrame {
                             contentPane.repaint();
 
                             floor1PanelRight.removeAll();
-                            JLabel tableLabel = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 1");
-                            tableLabel.setBounds(20, 20, 300, 30);
-                            tableLabel.setFont(new Font("Arial", Font.BOLD, 16));
-                            floor1PanelRight.add(tableLabel);
+                            JLabel tableLabelF1Right = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 1");
+                            tableLabelF1Right.setBounds(20, 20, 300, 30);
+                            tableLabelF1Right.setFont(new Font("Arial", Font.BOLD, 16));
+                            floor1PanelRight.add(tableLabelF1Right);
                             floor1PanelRight.repaint();
                             floor1PanelRight.revalidate();
                     	} else {
@@ -311,13 +352,34 @@ public class OrderingSystem extends JFrame {
             Table.setBackground(Color.WHITE);
             Table.setPreferredSize(new Dimension(100, 100));
             Table.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-            Table.add(new JLabel("Bàn " + i));
+            JLabel lbl_tableNum2 = new JLabel("Bàn " + i + ": Trống");
+            Table.add(lbl_tableNum2);
             
             // Chức nâng nhấn và hiển thị bàn sang màn hình tay phải
             int tableNumber = i;
             Table.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
+                	
+                	// Màu mè tí 
+                	rlbl_menu.setBackground(new Color(255, 255, 255));
+    				rlbl_menu.setForeground(new Color(166, 166, 166));
+    				rlbl_menu.setFont(new Font("Arial", Font.BOLD, 14));
+    				rlbl_table.setBackground(new Color(45, 61, 75));
+					rlbl_table.setForeground(new Color(255, 255, 255));
+					rlbl_table.setFont(new Font("Arial", Font.PLAIN, 14));
+					checkTabMenu = false;
+					checkTabTable = true;
+                	
+                	// Set viền bàn thành màu đỏ
+                	Table.setBorder(new RoundedBorderPanel(15, new Color(192, 32, 39), 2));
+                	
+                	// Set văn bản hiển thị trên ô của bàn đó
+                	lbl_tableNum2.setText("Bàn " + tableNumber + ": Đang phục vụ");
+                	
+                	// Gọi trang menu
+                	cardLayoutLeft.show(cardPanelLeft, "Thực đơn");
+                    
                 	// Xóa RoundedLabelEffect cũ nếu nó tồn tại
                     if (currentTableSeatLabel2 != null) {
                         contentPane.remove(currentTableSeatLabel2);
@@ -448,9 +510,9 @@ public class OrderingSystem extends JFrame {
 		menuPanelLeft.setBackground(new Color(255, 255, 255));
 		cardPanelLeft.add(menuPanelLeft, "Thực đơn");
 		
-		JPanel menuListPanelLef = new JPanel();
-		menuListPanelLef.setBackground(Color.WHITE);
-		menuListPanelLef.setLayout(new GridLayout(0, 3, 10, 10));
+		JPanel menuListPanelLeft = new JPanel();
+		menuListPanelLeft.setBackground(Color.WHITE);
+		menuListPanelLeft.setLayout(new GridLayout(0, 3, 10, 10));
 		
 		for (int i = 1; i <= 25; i++) {
             JPanel MenuList = new JPanel();
@@ -458,11 +520,24 @@ public class OrderingSystem extends JFrame {
             MenuList.setPreferredSize(new Dimension(100, 100));
             MenuList.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
             MenuList.add(new JLabel("Món " + i));
-            menuListPanelLef.add(MenuList);
+            menuListPanelLeft.add(MenuList);
+            
+            menuListPanelLeft.addMouseListener(new MouseAdapter () {
+            	@Override
+            	public void mouseClicked(MouseEvent e) {
+//            		floor1PanelRight.removeAll();
+//                    JLabel tableLabelF1Right = new JLabel("Thông tin của Bàn " + tableNumber + " Tầng 1");
+//                    tableLabelF1Right.setBounds(20, 20, 300, 30);
+//                    tableLabelF1Right.setFont(new Font("Arial", Font.BOLD, 16));
+//                    floor1PanelRight.add(tableLabelF1Right);
+//                    floor1PanelRight.repaint();
+//                    floor1PanelRight.revalidate();
+            	}
+            });
         }
 		menuPanelLeft.setLayout(null);
 
-        JScrollPane scrollMenuPanel = new JScrollPane(menuListPanelLef);
+        JScrollPane scrollMenuPanel = new JScrollPane(menuListPanelLeft);
         scrollMenuPanel.setBounds(10, 11, 439, 452);
         menuPanelLeft.add(scrollMenuPanel);
 		

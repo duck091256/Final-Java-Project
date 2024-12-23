@@ -2,6 +2,8 @@ package database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class JDBCUtil {
@@ -38,4 +40,27 @@ public class JDBCUtil {
     		e.printStackTrace();
     	}
     }
+    
+	// Phương thức đóng PreparedStatement
+	public static void closeStatement(PreparedStatement st) {
+		try {
+			if (st != null) {
+				st.close();
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// Phương thức đóng ResultSet nếu có sử dụng
+	public static void closeResultSet(ResultSet rs) {
+		try {
+			if (rs != null) {
+				rs.close();
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
 }

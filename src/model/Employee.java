@@ -1,7 +1,5 @@
 package model;
 
-import java.sql.Date;
-
 public class Employee {
 	private String employee_id;
 	private String employee_name;

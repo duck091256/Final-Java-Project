@@ -14,15 +14,21 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
+import data_access_object.CargoDAO;
 import data_access_object.EmployeeDAO;
+import data_access_object.TableDAO;
 import fx.RoundedBorderPanel;
 import fx.RoundedLabel;
+import fx.RoundedLabelEffect;
+import model.Cargo;
 import model.Employee;
+import model.Table;
 
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -41,19 +47,37 @@ import java.awt.CardLayout;
 public class ManagementSystem extends JFrame {
 
     private static final long serialVersionUID = 1L;
+    private int tableCountFloor1 = 12, tableCountFloor2 = 15;
     private JPanel contentPane;
+    private JPanel grip_mode_show_table_floor1, grip_mode_show_table_floor2;
+    private RoundedLabelEffect lbl_switch_table_floor1, lbl_switch_table_floor2;
+    private Boolean checkFloor1 = false, checkFloor2 = true;
+    private JScrollPane table_mode_show_table;
+    private JPanel floor1, floor2;
+    private RoundedLabel lbl_switch_table, lbl_switch_grip;
     private Boolean overallCheckStatus = false, cargoCheckStatus = true, tableCheckStatus = true, billCheckStatus = true, employeeCheckStatus = true;
     private JLabel lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee;
-    private CardLayout cardLayout;
-    private JPanel panel_contain_CardLayout;
-    private JTable table;
-    private DefaultTableModel Emp_table_model;
+    private CardLayout cardLayout, switch_CardLayout;
+    private JPanel panel_contain_CardLayout, panel_contain_switch_CardLayout;
+    private JTable CargoTable, FloorTable, StaffTable;
+    private DefaultTableModel Cargo_table_model, Floor_table_model, Emp_table_model;
     private JTextField tf_employee_id;
     private JTextField tf_employee_name;
     private JTextField tf_gender;
     private JTextField tf_phone_num;
     private JTextField tf_position;
-    private String EmpSelected;
+    private String CargoSelected, FloorSelected, EmpSelected;
+    private JTextField tf_cargo_id;
+    private JTextField tf_cargo_name;
+    private JTextField tf_stock_quantity;
+    private JTextField tf_price;
+    private JTextField tf_suppiler;
+    private JTextField tf_expiration_date;
+    private JTextField tf_status;
+    private JTextField tf_floorStay;
+    private JTextField tf_tableNum;
+    private JTextField tf_Respond;
+    private JTextField tf_clientNum;
     
     /**
      * Launch the application.
@@ -85,7 +109,11 @@ public class ManagementSystem extends JFrame {
     /**
      * Create the frame.
      */
-    public ManagementSystem() {    	
+    public ManagementSystem() {
+    	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    		CargoDAO.storeData();
+        }));
+    	
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Đặt cửa sổ full màn hình
@@ -175,6 +203,7 @@ public class ManagementSystem extends JFrame {
         	
         	@Override
         	public void mouseClicked(MouseEvent e) {
+        		cardLayout.show(panel_contain_CardLayout, "Cargo");
         		changeBoldToPlain(lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee);
         		lbl_cargo.setFont(new Font("Arial", Font.BOLD, 18));
                 lbl_cargo.setForeground(new Color(255, 255, 255));
@@ -210,6 +239,8 @@ public class ManagementSystem extends JFrame {
         	
         	@Override
         	public void mouseClicked(MouseEvent e) {
+        		cardLayout.show(panel_contain_CardLayout, "Floor");
+        		switch_CardLayout.show(panel_contain_switch_CardLayout, "TableMode");
         		changeBoldToPlain(lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee);
         		lbl_table.setFont(new Font("Arial", Font.BOLD, 18));
         		lbl_table.setForeground(new Color(255, 255, 255));
@@ -329,7 +360,9 @@ public class ManagementSystem extends JFrame {
         panel_contain_CardLayout.setBackground(new Color(255, 255, 255));
         panel_contain_CardLayout.setBounds(0, 154, 1283, 546);
         panel_contain_CardLayout.add(createOverviewPanel(), "Overall");
-        panel_contain_CardLayout.add(createEmployeesPanel(), "Employee");
+        panel_contain_CardLayout.add(createCargoPanel(), "Cargo");
+        panel_contain_CardLayout.add(createFloorPanel(), "Floor");
+        panel_contain_CardLayout.add(createEmployeePanel(), "Employee");
         
         contentPane.add(panel_contain_CardLayout);
     }
@@ -377,11 +410,1024 @@ public class ManagementSystem extends JFrame {
         return panel;
     }
     
-    private JPanel createEmployeesPanel() {
-        return createEmployeeScene("employee", new String[]{"employee_id", "employee_name", "gender", "phone_number", "position"});
+    private JPanel createCargoPanel() {
+    	JPanel cargoPanel = new JPanel();
+    	cargoPanel.setBackground(new Color(255, 255, 255));
+    	cargoPanel.setLayout(null);
+    	
+    	JPanel panel_filter = new JPanel();
+    	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_filter.setBounds(38, 34, 149, 488);
+    	panel_filter.setBackground(Color.WHITE);
+    	cargoPanel.add(panel_filter);
+    	
+    	JPanel panel_setting = new JPanel();
+    	panel_setting.setBounds(233, 34, 1009, 143);
+    	panel_setting.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_setting.setBackground(Color.white);
+    	cargoPanel.add(panel_setting);
+    	panel_setting.setLayout(null);
+    	
+    	JLabel lbl_cargo_id = new JLabel("Mã Hàng Hóa");
+    	lbl_cargo_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_cargo_id.setBounds(38, 11, 121, 33);
+    	panel_setting.add(lbl_cargo_id);
+    	
+    	tf_cargo_id = new JTextField();
+    	tf_cargo_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_cargo_id.setColumns(10);
+    	tf_cargo_id.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_cargo_id.setBounds(186, 11, 168, 33);
+    	panel_setting.add(tf_cargo_id);
+    	
+    	tf_cargo_name = new JTextField();
+    	tf_cargo_name.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_cargo_name.setColumns(10);
+    	tf_cargo_name.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_cargo_name.setBounds(186, 55, 168, 33);
+    	panel_setting.add(tf_cargo_name);
+    	
+    	JLabel lbl_cargo_name = new JLabel("Tên Hàng Hóa");
+    	lbl_cargo_name.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_cargo_name.setBounds(38, 55, 121, 33);
+    	panel_setting.add(lbl_cargo_name);
+    	
+    	JLabel lbl_stock_quantity = new JLabel("Số Lượng Tồn Kho");
+    	lbl_stock_quantity.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_stock_quantity.setBounds(38, 99, 138, 33);
+    	panel_setting.add(lbl_stock_quantity);
+    	
+    	tf_stock_quantity = new JTextField();
+    	tf_stock_quantity.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_stock_quantity.setColumns(10);
+    	tf_stock_quantity.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_stock_quantity.setBounds(186, 99, 168, 33);
+    	panel_setting.add(tf_stock_quantity);
+    	
+    	JLabel lbl_suppiler = new JLabel("Ngày Nhập");
+    	lbl_suppiler.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_suppiler.setBounds(442, 55, 121, 33);
+    	panel_setting.add(lbl_suppiler);
+    	
+    	JLabel lbl_price = new JLabel("Giá");
+    	lbl_price.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_price.setBounds(442, 11, 121, 33);
+    	panel_setting.add(lbl_price);
+    	
+    	tf_price = new JTextField();
+    	tf_price.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_price.setColumns(10);
+    	tf_price.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_price.setBounds(551, 11, 168, 33);
+    	panel_setting.add(tf_price);
+    	
+    	tf_suppiler = new JTextField();
+    	tf_suppiler.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_suppiler.setColumns(10);
+    	tf_suppiler.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_suppiler.setBounds(551, 55, 168, 33);
+    	panel_setting.add(tf_suppiler);
+    	
+    	JLabel lbl_expiration_date = new JLabel("Ngày Hết Hạn");
+    	lbl_expiration_date.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_expiration_date.setBounds(442, 99, 121, 33);
+    	panel_setting.add(lbl_expiration_date);
+    	
+    	tf_expiration_date = new JTextField();
+    	tf_expiration_date.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_expiration_date.setColumns(10);
+    	tf_expiration_date.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_expiration_date.setBounds(551, 99, 168, 33);
+    	panel_setting.add(tf_expiration_date);
+    	
+    	RoundedLabel lbl_add = new RoundedLabel("Thêm Hàng Hóa");
+    	lbl_add.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_add.setForeground(Color.WHITE);
+    	lbl_add.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_add.setCornerRadius(10);
+    	lbl_add.setBackground(new Color(129, 199, 132));
+    	lbl_add.setBounds(828, 11, 149, 33);
+    	panel_setting.add(lbl_add);
+    	
+    	lbl_add.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_add.setBackground(new Color(129, 199, 132));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_add.setBackground(new Color(33, 136, 56));
+    			addCargo();
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+		});
+    	
+    	RoundedLabel lbl_adjust = new RoundedLabel("Điều Chỉnh");
+    	lbl_adjust.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_adjust.setForeground(Color.WHITE);
+    	lbl_adjust.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_adjust.setCornerRadius(10);
+    	lbl_adjust.setBackground(new Color(100, 181, 246));
+    	lbl_adjust.setBounds(828, 55, 149, 33);
+    	panel_setting.add(lbl_adjust);
+    	
+    	lbl_adjust.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_adjust.setBackground(new Color(0, 123, 255));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_adjust.setBackground(new Color(100, 181, 246));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_adjust.setBackground(new Color(0, 86, 179));
+    			editCargo();
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_adjust.setBackground(new Color(0, 123, 255));
+    		}
+		});
+    	
+    	RoundedLabel lbl_remove = new RoundedLabel("Xóa");
+    	lbl_remove.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_remove.setForeground(Color.WHITE);
+    	lbl_remove.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_remove.setCornerRadius(10);
+    	lbl_remove.setBackground(new Color(229, 115, 115));
+    	lbl_remove.setBounds(828, 99, 149, 33);
+    	panel_setting.add(lbl_remove);
+    	
+    	lbl_remove.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_remove.setBackground(new Color(220, 53, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_remove.setBackground(new Color(229, 115, 115));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_remove.setBackground(new Color(176, 42, 55));
+    			deleteCargo();
+    		}
+    		
+    		@Override
+    	    public void mouseReleased(MouseEvent e) {
+    			lbl_remove.setBackground(new Color(220, 53, 69));
+    	    }
+		});
+    	
+    	JScrollPane scrollpane_show_table = new JScrollPane();
+    	scrollpane_show_table.setBounds(233, 217, 1009, 305);
+    	cargoPanel.add(scrollpane_show_table);
+    	
+    	Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
+    	scrollpane_show_table.setBorder(roundedBorder);
+    	
+    	CargoSelected = null;
+    	
+    	Cargo_table_model = new DefaultTableModel(
+				new Object[][] {
+				},
+				new String[] {
+					"Mã Hàng Hóa", "Tên Hàng Hóa", "Số Lượng Tồn Kho", "Giá", "Ngày Nhập", "Ngày Hết Hạn"
+				}
+			);
+		
+		CargoTable = new JTable();
+		CargoTable.setModel(Cargo_table_model);
+		CargoTable.getTableHeader().setReorderingAllowed(false);
+		CargoTable.setFont(new Font("Arial", Font.PLAIN, 20));
+		CargoTable.getColumnModel().getColumn(0).setPreferredWidth(150);
+		CargoTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+		CargoTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+		CargoTable.getColumnModel().getColumn(3).setPreferredWidth(150);
+		CargoTable.getColumnModel().getColumn(4).setPreferredWidth(150);
+		CargoTable.getColumnModel().getColumn(5).setPreferredWidth(150);
+		Font headerFont = new Font("Arial", Font.BOLD, 18);
+		CargoTable.getTableHeader().setPreferredSize(new Dimension(CargoTable.getTableHeader().getWidth(), 30));
+		CargoTable.getTableHeader().setFont(headerFont);
+		CargoTable.setRowHeight(30);
+    	
+		CargoTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    int selectedRow = CargoTable.getSelectedRow();
+                    if (selectedRow != -1) {
+                        tf_cargo_id.setText(CargoTable.getValueAt(selectedRow, 0).toString());
+                        tf_cargo_name.setText(CargoTable.getValueAt(selectedRow, 1).toString());
+                        tf_stock_quantity.setText(CargoTable.getValueAt(selectedRow, 2).toString());
+                        tf_price.setText(CargoTable.getValueAt(selectedRow, 3).toString());
+                        tf_suppiler.setText(CargoTable.getValueAt(selectedRow, 4).toString());
+                        tf_expiration_date.setText(CargoTable.getValueAt(selectedRow, 5).toString());
+                        
+                        CargoSelected = CargoTable.getValueAt(selectedRow, 0).toString();
+                    }
+                }
+            }
+        });
+		
+		scrollpane_show_table.setViewportView(CargoTable);
+    	loadCargo();
+    	return cargoPanel;
     }
     
-    private JPanel createEmployeeScene(String tableName, String[] attributes) {
+    public void loadCargo() {
+    	CargoDAO.loadData();
+		for(Cargo cargo : CargoDAO.map.values()) {
+	        Object[] newRow = {cargo.getCargo_id(), cargo.getCargo_name(), cargo.getStock_quantity(), cargo.getPrice(), cargo.getSuppiler(), cargo.getExpiration_date()};
+	        Cargo_table_model.addRow(newRow);
+		}
+    }
+    
+    public void sortByName() {
+    	ArrayList<Cargo> ls = new ArrayList<>(CargoDAO.map.values());
+    }
+    
+    public void addCargo() {
+        JTextField tfCargoID = new JTextField();
+        JTextField tfCargoName = new JTextField();
+        JTextField tfQuantity = new JTextField();
+        JTextField tfPrice = new JTextField();
+        JTextField tfSuppiler = new JTextField();
+        JTextField tfExpire = new JTextField();
+        
+        JPanel panel = new JPanel(new GridLayout(6, 2));
+        panel.add(new JLabel("Mã Hàng Hóa:"));
+        panel.add(tfCargoID);
+        panel.add(new JLabel("Tên Hàng Hóa:"));
+        panel.add(tfCargoName);
+        panel.add(new JLabel("Số Lượng:"));
+        panel.add(tfQuantity);
+        panel.add(new JLabel("Giá Tiền:"));
+        panel.add(tfPrice);
+        panel.add(new JLabel("Ngày Nhập Hàng:"));
+        panel.add(tfSuppiler);
+        panel.add(new JLabel("Ngày Hết Hạn:"));
+        panel.add(tfExpire);
+
+        int result = JOptionPane.showConfirmDialog(null, panel, "Thêm hàng mới", JOptionPane.OK_CANCEL_OPTION);
+
+        // Xử lý nếu người dùng nhấn OK
+        if (result == JOptionPane.OK_OPTION) {
+            String cargoID = tfCargoID.getText();
+            if (cargoID.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Mã hàng hóa không được để trống!");
+                return;
+            }
+
+            // Lấy thông tin, nếu trống thì chuyển thành "null"
+            String cargoName = tfCargoName.getText().trim().isEmpty() ? null : tfCargoName.getText().trim();
+            String quantity = tfQuantity.getText().trim().isEmpty() ? null : tfQuantity.getText().trim();
+            String price = tfPrice.getText().trim().isEmpty() ? null : tfPrice.getText().trim();
+            Date suppiler = tfSuppiler.getText().trim().isEmpty() ? null : Date.valueOf(tfSuppiler.getText().trim());
+            Date expire = tfExpire.getText().trim().isEmpty() ? null : Date.valueOf(tfExpire.getText().trim());
+            
+            try {
+                Cargo cargo = new Cargo(cargoID, cargoName, quantity, price, suppiler, expire);
+                CargoDAO.addCargo(cargo);
+                Object[] newRow = {cargo.getCargo_id(), cargo.getCargo_name(), cargo.getStock_quantity(), cargo.getPrice(), cargo.getSuppiler(), cargo.getExpiration_date()};
+                Cargo_table_model.addRow(newRow);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
+            }
+        }
+    }
+
+    public void editCargo() {
+        int selectedRow = CargoTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(null, "Vui lòng chọn một hàng hóa để sửa!");
+            return;
+        }
+
+        // Lấy thông tin hiện tại từ hàng được chọn
+        String currentCargoID = Cargo_table_model.getValueAt(selectedRow, 0).toString();
+        String currentCargoName = Cargo_table_model.getValueAt(selectedRow, 1) != null ? Cargo_table_model.getValueAt(selectedRow, 1).toString() : "";
+        String currentQuantity = Cargo_table_model.getValueAt(selectedRow, 2) != null ? Cargo_table_model.getValueAt(selectedRow, 2).toString() : "";
+        String currentPrice = Cargo_table_model.getValueAt(selectedRow, 3) != null ? Cargo_table_model.getValueAt(selectedRow, 3).toString() : "";
+        Date currentSuppiler = Cargo_table_model.getValueAt(selectedRow, 4) != null ? Date.valueOf(Cargo_table_model.getValueAt(selectedRow, 4).toString()) : null;
+        Date currentExpire = Cargo_table_model.getValueAt(selectedRow, 5) != null ? Date.valueOf(Cargo_table_model.getValueAt(selectedRow, 5).toString()) : null;
+
+        
+        // Tạo đối tượng hàng hóa hiện tại
+        Cargo currentCargo = new Cargo(currentCargoID, currentCargoName, currentQuantity, currentPrice, currentSuppiler, currentExpire);
+        
+        // Tạo các trường nhập liệu
+        JTextField tfCargoID = new JTextField(currentCargoID);
+        tfCargoID.setEditable(false);
+        JTextField tfCargoName = new JTextField(currentCargoName);
+        JTextField tfQuantity = new JTextField(currentQuantity);
+        JTextField tfPrice = new JTextField(currentPrice);
+        JTextField tfSuppiler = new JTextField(currentSuppiler.toString());
+        JTextField tfExpire = new JTextField(currentExpire.toString());
+
+        // Tạo bảng nhập liệu
+        JPanel panel = new JPanel(new GridLayout(6, 2));
+        panel.add(new JLabel("Mã Hàng Hóa:"));
+        panel.add(tfCargoID);
+        panel.add(new JLabel("Tên Hàng Hóa:"));
+        panel.add(tfCargoName);
+        panel.add(new JLabel("Số Lượng:"));
+        panel.add(tfQuantity);
+        panel.add(new JLabel("Giá Tiền:"));
+        panel.add(tfPrice);
+        panel.add(new JLabel("Ngày Nhập Hàng:"));
+        panel.add(tfSuppiler);
+        panel.add(new JLabel("Ngày Hết Hạn:"));
+        panel.add(tfExpire);
+
+        int result = JOptionPane.showConfirmDialog(null, panel, "Sửa thông tin hàng hóa", JOptionPane.OK_CANCEL_OPTION);
+
+        // Xử lý nếu người dùng nhấn OK
+        if (result == JOptionPane.OK_OPTION) {
+            String cargoID = tfCargoID.getText().trim();
+            if (cargoID.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Mã hàng hóa không được để trống!");
+                return;
+            }
+
+            // Lấy thông tin, nếu trống thì chuyển thành "null"
+            String name = tfCargoName.getText().trim().isEmpty() ? null : tfCargoName.getText().trim();
+            String quantity = tfQuantity.getText().trim().isEmpty() ? null : tfQuantity.getText().trim();
+            String price = tfPrice.getText().trim().isEmpty() ? null : tfPrice.getText().trim();
+            Date suppiler = tfSuppiler.getText().trim().isEmpty() ? null : Date.valueOf(tfSuppiler.getText().trim());
+            Date expire = tfExpire.getText().trim().isEmpty() ? null : Date.valueOf(tfExpire.getText().trim());
+
+            try {
+                Cargo newCargo = new Cargo(cargoID, name, quantity, price, suppiler, expire);
+                CargoDAO.updateCargo(currentCargo, newCargo);
+                Cargo_table_model.setValueAt(newCargo.getCargo_name(), selectedRow, 1);
+                Cargo_table_model.setValueAt(newCargo.getStock_quantity(), selectedRow, 2);
+                Cargo_table_model.setValueAt(newCargo.getPrice(), selectedRow, 3);
+                Cargo_table_model.setValueAt(newCargo.getSuppiler(), selectedRow, 4);
+                Cargo_table_model.setValueAt(newCargo.getExpiration_date(), selectedRow, 5);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
+            }
+        }
+    }
+
+    public void deleteCargo() {
+        int selectedRow = CargoTable.getSelectedRow();
+        
+        // Kiểm tra nếu có dòng được chọn
+        if (selectedRow >= 0) {
+            String cargoID = CargoTable.getValueAt(selectedRow, 0).toString();
+            
+            // Gọi phương thức xóa hàng hóa trong cơ sở dữ liệu
+            boolean success = CargoDAO.deleteCargo(cargoID);
+            
+            if (success) {
+                // Nếu xóa thành công, xóa dòng trong bảng
+                Cargo_table_model.removeRow(selectedRow);
+            } else {
+                JOptionPane.showMessageDialog(null, "Xóa hàng hóa thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Vui lòng chọn một hàng hóa để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+    
+    private JPanel createFloorPanel() {
+    	JPanel floorPanel = new JPanel();
+    	floorPanel.setBackground(new Color(255, 255, 255));
+    	floorPanel.setLayout(null);
+    	
+    	JPanel panel_filter = new JPanel();
+    	panel_filter.setBackground(new Color(255, 255, 255));
+    	panel_filter.setBounds(38, 22, 160, 166);
+    	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	floorPanel.add(panel_filter);
+    	panel_filter.setLayout(null);
+    	
+    	lbl_switch_grip = new RoundedLabel("Chế độ hiển thị lưới");
+    	lbl_switch_grip.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_switch_grip.setForeground(Color.BLACK);
+    	lbl_switch_grip.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_switch_grip.setCornerRadius(10);
+    	lbl_switch_grip.setBackground(new Color(211, 211, 211));
+    	lbl_switch_grip.setBounds(1065, 180, 166, 40);
+    	floorPanel.add(lbl_switch_grip);
+    	
+    	lbl_switch_grip.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_switch_grip.setForeground(Color.WHITE);
+    			lbl_switch_grip.setBackground(new Color(169, 169, 169));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_switch_grip.setForeground(Color.BLACK);
+    			lbl_switch_grip.setBackground(new Color(211, 211, 211));
+    		}
+    		
+    		@Override
+    		public void mouseClicked(MouseEvent e) {
+    			switch_CardLayout.show(panel_contain_switch_CardLayout, "GripModeFloor1");
+    			lbl_switch_grip.setVisible(false);
+    	        lbl_switch_table.setVisible(true);
+    	        lbl_switch_table_floor1.setVisible(true);
+    	        lbl_switch_table_floor2.setVisible(true);
+       		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_switch_grip.setForeground(Color.WHITE);
+    			lbl_switch_grip.setBackground(new Color(105, 105, 105));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_switch_grip.setForeground(Color.WHITE);
+    			lbl_switch_grip.setBackground(new Color(169, 169, 169));
+    		}
+		});
+    	
+    	lbl_switch_table = new RoundedLabel("Chế độ hiển thị bảng");
+    	lbl_switch_table.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_switch_table.setForeground(Color.BLACK);
+    	lbl_switch_table.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_switch_table.setCornerRadius(10);
+    	lbl_switch_table.setBackground(new Color(211, 211, 211));
+    	lbl_switch_table.setBounds(1065, 180, 166, 40);
+    	floorPanel.add(lbl_switch_table);
+    	
+    	lbl_switch_table.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_switch_table.setForeground(Color.WHITE);
+    			lbl_switch_table.setBackground(new Color(169, 169, 169));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_switch_table.setForeground(Color.BLACK);
+    			lbl_switch_table.setBackground(new Color(211, 211, 211));
+    		}
+    		
+    		@Override
+    		public void mouseClicked(MouseEvent e) {
+    			switch_CardLayout.show(panel_contain_switch_CardLayout, "TableMode");
+    			lbl_switch_table.setVisible(false);
+    	        lbl_switch_grip.setVisible(true);
+    	        lbl_switch_table_floor1.setVisible(false);
+    	        lbl_switch_table_floor2.setVisible(false);
+       		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_switch_table.setForeground(Color.WHITE);
+    			lbl_switch_table.setBackground(new Color(105, 105, 105));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_switch_table.setForeground(Color.WHITE);
+    			lbl_switch_table.setBackground(new Color(169, 169, 169));
+    		}
+		});
+    	
+    	JPanel panel_setting = new JPanel();
+    	panel_setting.setBackground(new Color(255, 255, 255));
+    	panel_setting.setBounds(233, 34, 1009, 143);
+    	panel_setting.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	floorPanel.add(panel_setting);
+    	panel_setting.setLayout(null);
+    	
+    	RoundedLabel lbl_add = new RoundedLabel("Thêm Bàn");
+    	lbl_add.setForeground(Color.BLACK);
+    	lbl_add.setBackground(new Color(129, 199, 132));
+    	lbl_add.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_add.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_add.setBounds(20, 99, 149, 33);
+    	lbl_add.setCornerRadius(10);
+    	panel_setting.add(lbl_add);
+    	
+    	lbl_add.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_add.setForeground(Color.BLACK);
+    			lbl_add.setBackground(new Color(129, 199, 132));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(33, 136, 56));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+		});
+    	
+    	RoundedLabel lbl_adjust = new RoundedLabel("Xem Order");
+    	lbl_adjust.setForeground(Color.BLACK);
+    	lbl_adjust.setBackground(new Color(100, 181, 246));
+    	lbl_adjust.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_adjust.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_adjust.setCornerRadius(10);
+    	lbl_adjust.setBounds(179, 99, 149, 33);
+    	panel_setting.add(lbl_adjust);
+    	
+    	lbl_adjust.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_adjust.setForeground(Color.WHITE);
+    			lbl_adjust.setBackground(new Color(0, 123, 255));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_adjust.setForeground(Color.BLACK);
+    			lbl_adjust.setBackground(new Color(100, 181, 246));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_adjust.setForeground(Color.WHITE);
+    			lbl_adjust.setBackground(new Color(0, 86, 179));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_adjust.setForeground(Color.WHITE);
+    			lbl_adjust.setBackground(new Color(0, 123, 255));
+    		}
+		});
+    	
+    	RoundedLabel lbl_remove = new RoundedLabel("Xóa Bàn");
+    	lbl_remove.setForeground(Color.BLACK);
+    	lbl_remove.setBackground(new Color(229, 115, 115));
+    	lbl_remove.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_remove.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_remove.setCornerRadius(10);
+    	lbl_remove.setBounds(338, 99, 149, 33);
+    	panel_setting.add(lbl_remove);
+    	
+    	lbl_remove.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_remove.setForeground(Color.WHITE);
+    			lbl_remove.setBackground(new Color(220, 53, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_remove.setForeground(Color.BLACK);
+    			lbl_remove.setBackground(new Color(229, 115, 115));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_remove.setForeground(Color.WHITE);
+    			lbl_remove.setBackground(new Color(176, 42, 55));
+    		}
+    		
+    		@Override
+    	    public void mouseReleased(MouseEvent e) {
+    			lbl_remove.setForeground(Color.WHITE);
+    			lbl_remove.setBackground(new Color(220, 53, 69));
+    	    }
+		});
+    	
+    	RoundedLabel lbl_update_status = new RoundedLabel("Cập Nhật Trạng Thái");
+    	lbl_update_status.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_update_status.setForeground(Color.BLACK);
+    	lbl_update_status.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_update_status.setCornerRadius(10);
+    	lbl_update_status.setBackground(new Color(255, 253, 182));
+    	lbl_update_status.setBounds(497, 99, 218, 33);
+    	panel_setting.add(lbl_update_status);
+    	
+    	lbl_update_status.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_update_status.setForeground(Color.WHITE);
+    			lbl_update_status.setBackground(new Color(255, 193, 7));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_update_status.setForeground(Color.BLACK);
+    			lbl_update_status.setBackground(new Color(255, 253, 182));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_update_status.setForeground(Color.WHITE);
+    			lbl_update_status.setBackground(new Color(140, 120, 80));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_update_status.setForeground(Color.WHITE);
+    			lbl_update_status.setBackground(new Color(255, 193, 7));
+    		}
+		});
+
+    	RoundedLabel lbl_assign_staff = new RoundedLabel("Thay Đổi Nhân Viên Phụ Trách");
+    	lbl_assign_staff.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_assign_staff.setForeground(Color.BLACK);
+    	lbl_assign_staff.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_assign_staff.setCornerRadius(10);
+    	lbl_assign_staff.setBackground(new Color(211, 211, 211));
+    	lbl_assign_staff.setBounds(725, 99, 261, 33);
+    	panel_setting.add(lbl_assign_staff);
+    	
+    	lbl_assign_staff.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_assign_staff.setForeground(Color.WHITE);
+    			lbl_assign_staff.setBackground(new Color(169, 169, 169));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_assign_staff.setForeground(Color.BLACK);
+    			lbl_assign_staff.setBackground(new Color(211, 211, 211));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_assign_staff.setForeground(Color.WHITE);
+    			lbl_assign_staff.setBackground(new Color(105, 105, 105));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_assign_staff.setForeground(Color.WHITE);
+    			lbl_assign_staff.setBackground(new Color(169, 169, 169));
+    		}
+		});
+
+    	tf_status = new JTextField();
+    	tf_status.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_status.setColumns(10);
+    	tf_status.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_status.setBounds(818, 11, 168, 33);
+    	panel_setting.add(tf_status);
+    	
+    	tf_floorStay = new JTextField();
+    	tf_floorStay.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_floorStay.setColumns(10);
+    	tf_floorStay.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_floorStay.setBounds(483, 11, 168, 33);
+    	panel_setting.add(tf_floorStay);
+    	
+    	tf_tableNum = new JTextField();
+    	tf_tableNum.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_tableNum.setColumns(10);
+    	tf_tableNum.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_tableNum.setBounds(121, 11, 168, 33);
+    	panel_setting.add(tf_tableNum);
+    	
+    	JLabel lbl_table_id = new JLabel("Số Bàn");
+    	lbl_table_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_table_id.setBounds(10, 11, 121, 33);
+    	panel_setting.add(lbl_table_id);
+    	
+    	JLabel lbl_floor_stay = new JLabel("Tầng Hoạt Động");
+    	lbl_floor_stay.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_floor_stay.setBounds(335, 11, 121, 33);
+    	panel_setting.add(lbl_floor_stay);
+    	
+    	JLabel lbl_operating_status = new JLabel("Trạng Thái");
+    	lbl_operating_status.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_operating_status.setBounds(691, 11, 102, 33);
+    	panel_setting.add(lbl_operating_status);
+    	
+    	tf_Respond = new JTextField();
+    	tf_Respond.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_Respond.setColumns(10);
+    	tf_Respond.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_Respond.setBounds(121, 55, 168, 33);
+    	panel_setting.add(tf_Respond);
+    	
+    	JLabel lbl_respond = new JLabel("Phụ Trách Bởi");
+    	lbl_respond.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_respond.setBounds(10, 55, 121, 33);
+    	panel_setting.add(lbl_respond);
+    	
+    	JLabel lbl_client_num = new JLabel("Số Người");
+    	lbl_client_num.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_client_num.setBounds(335, 55, 121, 33);
+    	panel_setting.add(lbl_client_num);
+    	
+    	tf_clientNum = new JTextField();
+    	tf_clientNum.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_clientNum.setColumns(10);
+    	tf_clientNum.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_clientNum.setBounds(483, 55, 168, 33);
+    	panel_setting.add(tf_clientNum);
+    	
+        switch_CardLayout = new CardLayout();
+        panel_contain_switch_CardLayout = new JPanel(switch_CardLayout);
+        panel_contain_switch_CardLayout.setBackground(Color.WHITE);
+        panel_contain_switch_CardLayout.setBounds(38, 224, 1204, 298);
+        panel_contain_switch_CardLayout.add(switchTableMode(), "TableMode");
+        panel_contain_switch_CardLayout.add(switchGripModeFloor1(), "GripModeFloor1"); 
+        panel_contain_switch_CardLayout.add(switchGripModeFloor2(), "GripModeFloor2"); 
+        
+        floorPanel.add(panel_contain_switch_CardLayout);
+    	floorPanel.setLayout(null);
+    	
+    	lbl_switch_table_floor1 = new RoundedLabelEffect("Tầng 1");
+    	lbl_switch_table_floor1.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_switch_table_floor1.setForeground(Color.BLACK);
+    	lbl_switch_table_floor1.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_switch_table_floor1.setCornerRadius(10);
+    	lbl_switch_table_floor1.setBackground(new Color(211, 211, 211));
+    	lbl_switch_table_floor1.setBounds(38, 199, 80, 25);
+    	lbl_switch_table_floor1.setVisible(false);
+    	floorPanel.add(lbl_switch_table_floor1);
+    	
+    	lbl_switch_table_floor1.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+				switch_CardLayout.show(panel_contain_switch_CardLayout, "GripModeFloor1");
+            }
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				lbl_switch_table_floor1.setBackground(new Color(169, 169, 169));
+				lbl_switch_table_floor1.setForeground(Color.WHITE);
+				lbl_switch_table_floor1.setFont(new Font("Arial", Font.PLAIN, 14));
+			}
+
+			@Override
+    		public void mouseExited(MouseEvent e) {
+				lbl_switch_table_floor1.setForeground(Color.BLACK);
+				lbl_switch_table_floor1.setBackground(new Color(211, 211, 211));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_switch_table_floor1.setForeground(Color.WHITE);
+    			lbl_switch_table_floor1.setBackground(new Color(105, 105, 105));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_switch_table_floor1.setForeground(Color.WHITE);
+    			lbl_switch_table_floor1.setBackground(new Color(169, 169, 169));
+    		}
+		});
+    	
+    	lbl_switch_table_floor2 = new RoundedLabelEffect("Tầng 2");
+    	lbl_switch_table_floor2.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_switch_table_floor2.setForeground(Color.BLACK);
+    	lbl_switch_table_floor2.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_switch_table_floor2.setCornerRadius(10);
+    	lbl_switch_table_floor2.setBackground(new Color(211, 211, 211));
+    	lbl_switch_table_floor2.setBounds(118, 199, 80, 25);
+    	lbl_switch_table_floor2.setVisible(false);
+    	floorPanel.add(lbl_switch_table_floor2);
+    	
+    	lbl_switch_table_floor2.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+            	switch_CardLayout.show(panel_contain_switch_CardLayout, "GripModeFloor2");
+            }
+
+            @Override
+			public void mouseEntered(MouseEvent e) {
+            	lbl_switch_table_floor2.setBackground(new Color(169, 169, 169));
+            	lbl_switch_table_floor2.setForeground(Color.WHITE);
+            	lbl_switch_table_floor2.setFont(new Font("Arial", Font.PLAIN, 14));
+			}
+
+			@Override
+    		public void mouseExited(MouseEvent e) {
+				lbl_switch_table_floor2.setForeground(Color.BLACK);
+				lbl_switch_table_floor2.setBackground(new Color(211, 211, 211));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_switch_table_floor2.setForeground(Color.WHITE);
+    			lbl_switch_table_floor2.setBackground(new Color(105, 105, 105));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_switch_table_floor2.setForeground(Color.WHITE);
+    			lbl_switch_table_floor2.setBackground(new Color(169, 169, 169));
+    		}
+		});
+    	
+    	floorPanel.revalidate();
+    	floorPanel.repaint();
+        
+    	return floorPanel;
+    }
+    
+    private JScrollPane switchTableMode() {
+    	
+    	// Chế độ bảng (Switch Mode)
+    	table_mode_show_table = new JScrollPane();
+    	table_mode_show_table.setBounds(38, 224, 1204, 298);
+    	
+    	Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
+    	table_mode_show_table.setBorder(roundedBorder);
+        
+    	FloorSelected = null;
+    	
+    	Floor_table_model = new DefaultTableModel(
+				new Object[][] {
+				},
+				new String[] {
+					"Số Bàn", "Tầng Hoạt Động", "Trạng Thái", "Phụ Trách Bởi", "Số Người"
+				}
+			);
+		
+    	FloorTable = new JTable();
+    	FloorTable.setModel(Floor_table_model);
+    	FloorTable.getTableHeader().setReorderingAllowed(false);
+    	FloorTable.setFont(new Font("Arial", Font.PLAIN, 20));
+    	FloorTable.getColumnModel().getColumn(0).setPreferredWidth(100);
+    	FloorTable.getColumnModel().getColumn(1).setPreferredWidth(250);
+    	FloorTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+    	FloorTable.getColumnModel().getColumn(3).setPreferredWidth(150);
+    	FloorTable.getColumnModel().getColumn(4).setPreferredWidth(200);
+		Font headerFont = new Font("Arial", Font.BOLD, 18);
+		FloorTable.getTableHeader().setPreferredSize(new Dimension(FloorTable.getTableHeader().getWidth(), 30));
+		FloorTable.getTableHeader().setFont(headerFont);
+		FloorTable.setRowHeight(30);
+    	
+		FloorTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    int selectedRow = FloorTable.getSelectedRow();
+                    if (selectedRow != -1) {
+                        tf_tableNum.setText(FloorTable.getValueAt(selectedRow, 0).toString());
+                        tf_floorStay.setText(FloorTable.getValueAt(selectedRow, 1).toString());
+                        tf_status.setText(FloorTable.getValueAt(selectedRow, 2).toString());
+                        tf_Respond.setText(FloorTable.getValueAt(selectedRow, 3).toString());
+                        tf_clientNum.setText(FloorTable.getValueAt(selectedRow, 4).toString());
+                        
+                        FloorSelected = FloorTable.getValueAt(selectedRow, 0).toString();
+                    }
+                }
+            }
+        });
+		
+		table_mode_show_table.setViewportView(FloorTable);
+		loadFloor();
+		
+		return table_mode_show_table;
+    }
+    
+    private JPanel switchGripModeFloor1() {
+    	
+    	// Chế độ lưới (Switch Mode)
+    	grip_mode_show_table_floor1 = new JPanel();
+    	grip_mode_show_table_floor1.setBackground(Color.WHITE);
+    	grip_mode_show_table_floor1.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	grip_mode_show_table_floor1.setBounds(38, 224, 1204, 298);
+    	grip_mode_show_table_floor1.setLayout(null);
+        
+        floor1 = new JPanel();
+        floor1.setBackground(Color.WHITE);
+        floor1.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        floor1.setBounds(0, 0, 1202, 296);
+        floor1.setLayout(new GridLayout(0, 4, 10, 10));
+    	
+        loadTablesFloor1();
+        
+    	JScrollPane scrollPane1 = new JScrollPane(floor1);
+        scrollPane1.setBounds(0, 0, 1204, 298);
+        grip_mode_show_table_floor1.add(scrollPane1);
+    	
+    	return grip_mode_show_table_floor1;
+    }
+    
+    private void loadTablesFloor1() {
+        for (int i = 1; i <= tableCountFloor1; i++) {
+            addTableToPanelFloor1("Bàn " + i, "Trống");
+        }
+    }
+    
+    private void addTableFloor1() {
+        tableCountFloor1++;
+        addTableToPanelFloor1("Bàn " + tableCountFloor1, "Trống");
+        floor1.revalidate(); // Làm mới giao diện
+        floor1.repaint();
+    }
+    
+    private void addTableToPanelFloor1(String tableName, String status) {
+    	JPanel Table = new JPanel();
+        Table.setBackground(Color.WHITE);
+        Table.setPreferredSize(new Dimension(100, 100));
+        Table.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        JLabel lbl_table = new JLabel("<html>" + tableName + "<br>" + status + "</html>");
+        Table.add(lbl_table);
+        
+        // Sự kiện khi nhấn vào bàn
+        Table.addMouseListener(new MouseAdapter() {
+        	@Override
+        	public void mouseClicked(MouseEvent e) {
+        		JOptionPane.showMessageDialog(null, "Bạn đã chọn " + tableName);
+        	}
+		});
+        floor1.add(Table);
+    }
+    
+private JPanel switchGripModeFloor2() {
+    	
+    	// Chế độ lưới (Switch Mode)
+    	grip_mode_show_table_floor2 = new JPanel();
+    	grip_mode_show_table_floor2.setBackground(Color.WHITE);
+    	grip_mode_show_table_floor2.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	grip_mode_show_table_floor2.setBounds(38, 224, 1204, 298);
+    	grip_mode_show_table_floor2.setLayout(null);
+        
+        floor2 = new JPanel();
+        floor2.setBackground(Color.WHITE);
+        floor2.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        floor2.setBounds(0, 0, 1202, 296);
+        floor2.setLayout(new GridLayout(0, 4, 10, 10));
+    	
+        loadTablesFloor2();
+        
+    	JScrollPane scrollPane2 = new JScrollPane(floor2);
+        scrollPane2.setBounds(0, 0, 1204, 298);
+        grip_mode_show_table_floor2.add(scrollPane2);
+    	
+    	return grip_mode_show_table_floor2;
+    }
+    
+    private void loadTablesFloor2() {
+        for (int i = 1; i <= tableCountFloor2; i++) {
+            addTableToPanelFloor2("Bàn " + i, "Trống");
+        }
+    }
+    
+    private void addTableFloor2() {
+        tableCountFloor2++;
+        addTableToPanelFloor2("Bàn " + tableCountFloor2, "Trống");
+        floor2.revalidate(); // Làm mới giao diện
+        floor2.repaint();
+    }
+    
+    private void addTableToPanelFloor2(String tableName, String status) {
+    	JPanel Table = new JPanel();
+        Table.setBackground(Color.WHITE);
+        Table.setPreferredSize(new Dimension(100, 100));
+        Table.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        JLabel lbl_table = new JLabel("<html>" + tableName + "<br>" + status + "</html>");
+        Table.add(lbl_table);
+        
+        // Sự kiện khi nhấn vào bàn
+        Table.addMouseListener(new MouseAdapter() {
+        	@Override
+        	public void mouseClicked(MouseEvent e) {
+        		JOptionPane.showMessageDialog(null, "Bạn đã chọn " + tableName);
+        	}
+		});
+        floor2.add(Table);
+    }
+    
+    public void loadFloor() {
+    	TableDAO.loadData();
+		for(Table table : TableDAO.map.values()) {
+	        Object[] newRow = {table.getTableID(), table.getFloorStay(), table.getOperatingStatus(), table.getResponsibleBy(), table.getClientNum()};
+	        Floor_table_model.addRow(newRow);
+		}
+    }
+    
+    private JPanel createEmployeePanel() {
     	JPanel employeePanel = new JPanel();
     	employeePanel.setBackground(new Color(255, 255, 255));
     	employeePanel.setLayout(null);
@@ -573,39 +1619,39 @@ public class ManagementSystem extends JFrame {
 				}
 			);
 		
-		table = new JTable();
-		table.setModel(Emp_table_model);
-		table.getTableHeader().setReorderingAllowed(false);
-		table.setFont(new Font("Arial", Font.PLAIN, 20));
-		table.getColumnModel().getColumn(0).setPreferredWidth(240);
-		table.getColumnModel().getColumn(1).setPreferredWidth(240);
-		table.getColumnModel().getColumn(2).setPreferredWidth(240);
-		table.getColumnModel().getColumn(3).setPreferredWidth(240);
-		table.getColumnModel().getColumn(4).setPreferredWidth(240);
-		Font headerFont = new Font("Arial", Font.BOLD, 20);
-		table.getTableHeader().setPreferredSize(new Dimension(table.getTableHeader().getWidth(), 30));
-		table.getTableHeader().setFont(headerFont);
-		table.setRowHeight(40);
+    	StaffTable = new JTable();
+    	StaffTable.setModel(Emp_table_model);
+    	StaffTable.getTableHeader().setReorderingAllowed(false);
+    	StaffTable.setFont(new Font("Arial", Font.PLAIN, 20));
+    	StaffTable.getColumnModel().getColumn(0).setPreferredWidth(100);
+    	StaffTable.getColumnModel().getColumn(1).setPreferredWidth(250);
+    	StaffTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+    	StaffTable.getColumnModel().getColumn(3).setPreferredWidth(150);
+    	StaffTable.getColumnModel().getColumn(4).setPreferredWidth(200);
+		Font headerFont = new Font("Arial", Font.BOLD, 18);
+		StaffTable.getTableHeader().setPreferredSize(new Dimension(StaffTable.getTableHeader().getWidth(), 30));
+		StaffTable.getTableHeader().setFont(headerFont);
+		StaffTable.setRowHeight(30);
     	
-		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+		StaffTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
-                    int selectedRow = table.getSelectedRow();
+                    int selectedRow = StaffTable.getSelectedRow();
                     if (selectedRow != -1) {
-                        tf_employee_id.setText(table.getValueAt(selectedRow, 0).toString());
-                        tf_employee_name.setText(table.getValueAt(selectedRow, 1).toString());
-                        tf_gender.setText(table.getValueAt(selectedRow, 2).toString());
-                        tf_phone_num.setText(table.getValueAt(selectedRow, 3).toString());
-                        tf_position.setText(table.getValueAt(selectedRow, 4).toString());
+                        tf_employee_id.setText(StaffTable.getValueAt(selectedRow, 0).toString());
+                        tf_employee_name.setText(StaffTable.getValueAt(selectedRow, 1).toString());
+                        tf_gender.setText(StaffTable.getValueAt(selectedRow, 2).toString());
+                        tf_phone_num.setText(StaffTable.getValueAt(selectedRow, 3).toString());
+                        tf_position.setText(StaffTable.getValueAt(selectedRow, 4).toString());
                         
-                        EmpSelected = table.getValueAt(selectedRow, 0).toString();
+                        EmpSelected = StaffTable.getValueAt(selectedRow, 0).toString();
                     }
                 }
             }
         });
 		
-		scrollpane_show_table.setViewportView(table);
+		scrollpane_show_table.setViewportView(StaffTable);
 		loadEmployee();
     	return employeePanel;
     }
@@ -642,8 +1688,8 @@ public class ManagementSystem extends JFrame {
 
         // Xử lý nếu người dùng nhấn OK
         if (result == JOptionPane.OK_OPTION) {
-            String empID = tfEmpID.getText().trim();
-            if (empID.isEmpty()) {
+            String empID = tfEmpID.getText();
+            if (empID.isEmpty() || empID.equals("UA - ")) {
                 JOptionPane.showMessageDialog(null, "Mã nhân viên không được để trống!");
                 return;
             }
@@ -666,7 +1712,7 @@ public class ManagementSystem extends JFrame {
     }
 
     public void editEmployee() {
-        int selectedRow = table.getSelectedRow();
+        int selectedRow = StaffTable.getSelectedRow();
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(null, "Vui lòng chọn một nhân viên để sửa!");
             return;
@@ -681,6 +1727,7 @@ public class ManagementSystem extends JFrame {
 
         // Tạo các trường nhập liệu
         JTextField tfEmpID = new JTextField(currentEmpID);
+        tfEmpID.setEditable(false);
         JTextField tfEmpName = new JTextField(currentEmpName);
         JTextField tfGender = new JTextField(currentGender);
         JTextField tfPhoneNum = new JTextField(currentPhoneNum);
@@ -729,11 +1776,11 @@ public class ManagementSystem extends JFrame {
     }
 
     public void deleteEmployee() {
-        int selectedRow = table.getSelectedRow();
+        int selectedRow = StaffTable.getSelectedRow();
         
         // Kiểm tra nếu có dòng được chọn
         if (selectedRow >= 0) {
-            String empID = table.getValueAt(selectedRow, 0).toString(); // Lấy mã nhân viên từ cột đầu tiên
+            String empID = StaffTable.getValueAt(selectedRow, 0).toString(); // Lấy mã nhân viên từ cột đầu tiên
             
             // Gọi phương thức xóa nhân viên trong cơ sở dữ liệu
             boolean success = EmployeeDAO.deleteEmployee(empID);
@@ -748,5 +1795,4 @@ public class ManagementSystem extends JFrame {
             JOptionPane.showMessageDialog(null, "Vui lòng chọn một nhân viên để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
         }
     }
-
 }

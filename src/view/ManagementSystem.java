@@ -14,13 +14,13 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
-import data_access_object.CargoDAO;
+import data_access_object.DishDAO;
 import data_access_object.EmployeeDAO;
 import data_access_object.TableDAO;
 import fx.RoundedBorderPanel;
 import fx.RoundedLabel;
 import fx.RoundedLabelEffect;
-import model.Cargo;
+import model.Dish;
 import model.Employee;
 import model.Table;
 
@@ -55,24 +55,22 @@ public class ManagementSystem extends JFrame {
     private JScrollPane table_mode_show_table;
     private JPanel floor1, floor2;
     private RoundedLabel lbl_switch_table, lbl_switch_grip;
-    private Boolean overallCheckStatus = false, cargoCheckStatus = true, tableCheckStatus = true, billCheckStatus = true, employeeCheckStatus = true;
-    private JLabel lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee;
+    private Boolean overallCheckStatus = false, dishCheckStatus = true, tableCheckStatus = true, billCheckStatus = true, employeeCheckStatus = true;
+    private JLabel lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee;
     private CardLayout cardLayout, switch_CardLayout;
     private JPanel panel_contain_CardLayout, panel_contain_switch_CardLayout;
-    private JTable CargoTable, FloorTable, StaffTable;
-    private DefaultTableModel Cargo_table_model, Floor_table_model, Emp_table_model;
+    private JTable DishTable, FloorTable, StaffTable;
+    private DefaultTableModel Dish_table_model, Floor_table_model, Emp_table_model;
     private JTextField tf_employee_id;
     private JTextField tf_employee_name;
     private JTextField tf_gender;
     private JTextField tf_phone_num;
     private JTextField tf_position;
-    private String CargoSelected, FloorSelected, EmpSelected;
-    private JTextField tf_cargo_id;
-    private JTextField tf_cargo_name;
-    private JTextField tf_stock_quantity;
-    private JTextField tf_price;
-    private JTextField tf_suppiler;
-    private JTextField tf_expiration_date;
+    private String DishSelected, FloorSelected, EmpSelected;
+    private JTextField tf_dish_id;
+    private JTextField tf_dish_name;
+    private JTextField tf_dish_price;
+    private JTextField tf_dish_category;
     private JTextField tf_status;
     private JTextField tf_floorStay;
     private JTextField tf_tableNum;
@@ -111,7 +109,7 @@ public class ManagementSystem extends JFrame {
      */
     public ManagementSystem() {
     	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-    		CargoDAO.storeData();
+    		DishDAO.storeData();
         }));
     	
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -168,47 +166,47 @@ public class ManagementSystem extends JFrame {
         	@Override
         	public void mouseClicked(MouseEvent e) {
         		cardLayout.show(panel_contain_CardLayout, "Overall");
-        		changeBoldToPlain(lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee);
+        		changeBoldToPlain(lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee);
         		lbl_overall.setFont(new Font("Arial", Font.BOLD, 18));
         		lbl_overall.setForeground(new Color(255, 255, 255));
         		overallCheckStatus = false;
-        		cargoCheckStatus = true;
+        		dishCheckStatus = true;
         		tableCheckStatus = true;
         		billCheckStatus = true;
         		employeeCheckStatus = true;
         	}
         });
         
-        lbl_cargo = new JLabel("Hàng hóa");
-        lbl_cargo.setForeground(Color.WHITE);
-        lbl_cargo.setFont(new Font("Arial", Font.PLAIN, 18));
-        lbl_cargo.setBounds(174, 28, 89, 21);
-        panel_down.add(lbl_cargo);
+        lbl_dish = new JLabel("Thực đơn");
+        lbl_dish.setForeground(Color.WHITE);
+        lbl_dish.setFont(new Font("Arial", Font.PLAIN, 18));
+        lbl_dish.setBounds(174, 28, 89, 21);
+        panel_down.add(lbl_dish);
         
         // Sự kiện di chuột đến, đi và nhấn
-        lbl_cargo.addMouseListener(new MouseAdapter() {
+        lbl_dish.addMouseListener(new MouseAdapter() {
         	@Override
         	public void mouseEntered(MouseEvent e) {
-        		lbl_cargo.setFont(new Font("Arial", Font.BOLD, 18));
-                lbl_cargo.setForeground(new Color(255, 255, 255));
+        		lbl_dish.setFont(new Font("Arial", Font.BOLD, 18));
+                lbl_dish.setForeground(new Color(255, 255, 255));
         	}
         	
         	@Override
         	public void mouseExited(MouseEvent e) {
-        		if (cargoCheckStatus) {
-        			lbl_cargo.setFont(new Font("Arial", Font.PLAIN, 18));
-                    lbl_cargo.setForeground(new Color(255, 255, 255));
+        		if (dishCheckStatus) {
+        			lbl_dish.setFont(new Font("Arial", Font.PLAIN, 18));
+                    lbl_dish.setForeground(new Color(255, 255, 255));
         		}
         	}
         	
         	@Override
         	public void mouseClicked(MouseEvent e) {
-        		cardLayout.show(panel_contain_CardLayout, "Cargo");
-        		changeBoldToPlain(lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee);
-        		lbl_cargo.setFont(new Font("Arial", Font.BOLD, 18));
-                lbl_cargo.setForeground(new Color(255, 255, 255));
+        		cardLayout.show(panel_contain_CardLayout, "Menu");
+        		changeBoldToPlain(lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee);
+        		lbl_dish.setFont(new Font("Arial", Font.BOLD, 18));
+                lbl_dish.setForeground(new Color(255, 255, 255));
                 overallCheckStatus = true;
-        		cargoCheckStatus = false;
+                dishCheckStatus = false;
         		tableCheckStatus = true;
         		billCheckStatus = true;
         		employeeCheckStatus = true;
@@ -241,21 +239,21 @@ public class ManagementSystem extends JFrame {
         	public void mouseClicked(MouseEvent e) {
         		cardLayout.show(panel_contain_CardLayout, "Floor");
         		switch_CardLayout.show(panel_contain_switch_CardLayout, "TableMode");
-        		changeBoldToPlain(lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee);
+        		changeBoldToPlain(lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee);
         		lbl_table.setFont(new Font("Arial", Font.BOLD, 18));
         		lbl_table.setForeground(new Color(255, 255, 255));
                 overallCheckStatus = true;
-        		cargoCheckStatus = true;
+                dishCheckStatus = true;
         		tableCheckStatus = false;
         		billCheckStatus = true;
         		employeeCheckStatus = true;
         	}
         });
         
-        lbl_bill = new JLabel("Giao dịch");
+        lbl_bill = new JLabel("Hóa đơn");
         lbl_bill.setForeground(Color.WHITE);
         lbl_bill.setFont(new Font("Arial", Font.PLAIN, 18));
-        lbl_bill.setBounds(413, 28, 89, 21);
+        lbl_bill.setBounds(415, 28, 89, 21);
         panel_down.add(lbl_bill);
         
         // Sự kiện di chuột đến, đi và nhấn
@@ -276,11 +274,11 @@ public class ManagementSystem extends JFrame {
         	
         	@Override
         	public void mouseClicked(MouseEvent e) {
-        		changeBoldToPlain(lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee);
+        		changeBoldToPlain(lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee);
         		lbl_bill.setFont(new Font("Arial", Font.BOLD, 18));
         		lbl_bill.setForeground(new Color(255, 255, 255));
                 overallCheckStatus = true;
-        		cargoCheckStatus = true;
+                dishCheckStatus = true;
         		tableCheckStatus = true;
         		billCheckStatus = false;
         		employeeCheckStatus = true;
@@ -312,11 +310,11 @@ public class ManagementSystem extends JFrame {
         	@Override
         	public void mouseClicked(MouseEvent e) {
         		cardLayout.show(panel_contain_CardLayout, "Employee");
-        		changeBoldToPlain(lbl_overall, lbl_cargo, lbl_table, lbl_bill, lbl_employee);
+        		changeBoldToPlain(lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee);
         		lbl_employee.setFont(new Font("Arial", Font.BOLD, 18));
         		lbl_employee.setForeground(new Color(255, 255, 255));
                 overallCheckStatus = true;
-        		cargoCheckStatus = true;
+                dishCheckStatus = true;
         		tableCheckStatus = true;
         		billCheckStatus = true;
         		employeeCheckStatus = false;
@@ -360,19 +358,19 @@ public class ManagementSystem extends JFrame {
         panel_contain_CardLayout.setBackground(new Color(255, 255, 255));
         panel_contain_CardLayout.setBounds(0, 154, 1283, 546);
         panel_contain_CardLayout.add(createOverviewPanel(), "Overall");
-        panel_contain_CardLayout.add(createCargoPanel(), "Cargo");
+        panel_contain_CardLayout.add(createMenuPanel(), "Menu");
         panel_contain_CardLayout.add(createFloorPanel(), "Floor");
         panel_contain_CardLayout.add(createEmployeePanel(), "Employee");
         
         contentPane.add(panel_contain_CardLayout);
     }
     
-    public void changeBoldToPlain(JLabel lbl_overall,JLabel lbl_cargo,JLabel lbl_table,JLabel lbl_bill,JLabel lbl_employee) {
+    public void changeBoldToPlain(JLabel lbl_overall,JLabel lbl_dish,JLabel lbl_table,JLabel lbl_bill,JLabel lbl_employee) {
     	// Đổi tất cả label thành PLAIN trước mới kiểm tra rồi chuyển thành BOLD
     	this.lbl_overall.setFont(new Font("Arial", Font.PLAIN, 18));
 		this.lbl_overall.setForeground(new Color(255, 255, 255));
-		this.lbl_cargo.setFont(new Font("Arial", Font.PLAIN, 18));
-		this.lbl_cargo.setForeground(new Color(255, 255, 255));
+		this.lbl_dish.setFont(new Font("Arial", Font.PLAIN, 18));
+		this.lbl_dish.setForeground(new Color(255, 255, 255));
 		this.lbl_table.setFont(new Font("Arial", Font.PLAIN, 18));
 		this.lbl_table.setForeground(new Color(255, 255, 255));
 		this.lbl_bill.setFont(new Font("Arial", Font.PLAIN, 18));
@@ -382,11 +380,9 @@ public class ManagementSystem extends JFrame {
     	if (isBold(lbl_overall)) {
     		this.lbl_overall.setFont(new Font("Arial", Font.PLAIN, 18));
     		this.lbl_overall.setForeground(new Color(255, 255, 255));
-    		System.out.println("Overall change");
-    	} else if (isBold(lbl_cargo)) {
-    		this.lbl_cargo.setFont(new Font("Arial", Font.PLAIN, 18));
-    		this.lbl_cargo.setForeground(new Color(255, 255, 255));
-    		System.out.println("Cargo change");
+    	} else if (isBold(lbl_dish)) {
+    		this.lbl_dish.setFont(new Font("Arial", Font.PLAIN, 18));
+    		this.lbl_dish.setForeground(new Color(255, 255, 255));
     	} else if (isBold(lbl_table)) {
     		this.lbl_table.setFont(new Font("Arial", Font.PLAIN, 18));
     		this.lbl_table.setForeground(new Color(255, 255, 255));
@@ -410,97 +406,73 @@ public class ManagementSystem extends JFrame {
         return panel;
     }
     
-    private JPanel createCargoPanel() {
-    	JPanel cargoPanel = new JPanel();
-    	cargoPanel.setBackground(new Color(255, 255, 255));
-    	cargoPanel.setLayout(null);
+    private JPanel createMenuPanel() {
+    	JPanel menuPanel = new JPanel();
+    	menuPanel.setBackground(new Color(255, 255, 255));
+    	menuPanel.setLayout(null);
     	
     	JPanel panel_filter = new JPanel();
     	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
     	panel_filter.setBounds(38, 34, 149, 488);
     	panel_filter.setBackground(Color.WHITE);
-    	cargoPanel.add(panel_filter);
+    	menuPanel.add(panel_filter);
     	
     	JPanel panel_setting = new JPanel();
     	panel_setting.setBounds(233, 34, 1009, 143);
     	panel_setting.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
     	panel_setting.setBackground(Color.white);
-    	cargoPanel.add(panel_setting);
+    	menuPanel.add(panel_setting);
     	panel_setting.setLayout(null);
     	
-    	JLabel lbl_cargo_id = new JLabel("Mã Hàng Hóa");
-    	lbl_cargo_id.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_cargo_id.setBounds(38, 11, 121, 33);
-    	panel_setting.add(lbl_cargo_id);
+    	JLabel lbl_dish_id = new JLabel("Mã Món Ăn");
+    	lbl_dish_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_dish_id.setBounds(39, 31, 121, 33);
+    	panel_setting.add(lbl_dish_id);
     	
-    	tf_cargo_id = new JTextField();
-    	tf_cargo_id.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_cargo_id.setColumns(10);
-    	tf_cargo_id.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_cargo_id.setBounds(186, 11, 168, 33);
-    	panel_setting.add(tf_cargo_id);
+    	tf_dish_id = new JTextField();
+    	tf_dish_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_id.setColumns(10);
+    	tf_dish_id.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_dish_id.setBounds(187, 31, 168, 33);
+    	panel_setting.add(tf_dish_id);
     	
-    	tf_cargo_name = new JTextField();
-    	tf_cargo_name.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_cargo_name.setColumns(10);
-    	tf_cargo_name.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_cargo_name.setBounds(186, 55, 168, 33);
-    	panel_setting.add(tf_cargo_name);
+    	tf_dish_name = new JTextField();
+    	tf_dish_name.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_name.setColumns(10);
+    	tf_dish_name.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_dish_name.setBounds(187, 75, 168, 33);
+    	panel_setting.add(tf_dish_name);
     	
-    	JLabel lbl_cargo_name = new JLabel("Tên Hàng Hóa");
-    	lbl_cargo_name.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_cargo_name.setBounds(38, 55, 121, 33);
-    	panel_setting.add(lbl_cargo_name);
+    	JLabel lbl_dish_name = new JLabel("Tên Món Ăn");
+    	lbl_dish_name.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_dish_name.setBounds(39, 75, 121, 33);
+    	panel_setting.add(lbl_dish_name);
     	
-    	JLabel lbl_stock_quantity = new JLabel("Số Lượng Tồn Kho");
-    	lbl_stock_quantity.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_stock_quantity.setBounds(38, 99, 138, 33);
-    	panel_setting.add(lbl_stock_quantity);
+    	JLabel lbl_dish_category = new JLabel("Loại Món Ăn");
+    	lbl_dish_category.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_dish_category.setBounds(443, 75, 121, 33);
+    	panel_setting.add(lbl_dish_category);
     	
-    	tf_stock_quantity = new JTextField();
-    	tf_stock_quantity.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_stock_quantity.setColumns(10);
-    	tf_stock_quantity.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_stock_quantity.setBounds(186, 99, 168, 33);
-    	panel_setting.add(tf_stock_quantity);
+    	JLabel lbl_dish_price = new JLabel("Giá");
+    	lbl_dish_price.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_dish_price.setBounds(443, 31, 121, 33);
+    	panel_setting.add(lbl_dish_price);
     	
-    	JLabel lbl_suppiler = new JLabel("Ngày Nhập");
-    	lbl_suppiler.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_suppiler.setBounds(442, 55, 121, 33);
-    	panel_setting.add(lbl_suppiler);
+    	tf_dish_price = new JTextField();
+    	tf_dish_price.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_price.setColumns(10);
+    	tf_dish_price.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_dish_price.setBounds(590, 31, 168, 33);
+    	panel_setting.add(tf_dish_price);
     	
-    	JLabel lbl_price = new JLabel("Giá");
-    	lbl_price.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_price.setBounds(442, 11, 121, 33);
-    	panel_setting.add(lbl_price);
+    	tf_dish_category = new JTextField();
+    	tf_dish_category.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_category.setColumns(10);
+    	tf_dish_category.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_dish_category.setBounds(590, 75, 168, 33);
+    	panel_setting.add(tf_dish_category);
     	
-    	tf_price = new JTextField();
-    	tf_price.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_price.setColumns(10);
-    	tf_price.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_price.setBounds(551, 11, 168, 33);
-    	panel_setting.add(tf_price);
-    	
-    	tf_suppiler = new JTextField();
-    	tf_suppiler.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_suppiler.setColumns(10);
-    	tf_suppiler.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_suppiler.setBounds(551, 55, 168, 33);
-    	panel_setting.add(tf_suppiler);
-    	
-    	JLabel lbl_expiration_date = new JLabel("Ngày Hết Hạn");
-    	lbl_expiration_date.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_expiration_date.setBounds(442, 99, 121, 33);
-    	panel_setting.add(lbl_expiration_date);
-    	
-    	tf_expiration_date = new JTextField();
-    	tf_expiration_date.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_expiration_date.setColumns(10);
-    	tf_expiration_date.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_expiration_date.setBounds(551, 99, 168, 33);
-    	panel_setting.add(tf_expiration_date);
-    	
-    	RoundedLabel lbl_add = new RoundedLabel("Thêm Hàng Hóa");
+    	RoundedLabel lbl_add = new RoundedLabel("Thêm Món Ăn");
     	lbl_add.setHorizontalAlignment(SwingConstants.CENTER);
     	lbl_add.setForeground(Color.WHITE);
     	lbl_add.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -523,7 +495,7 @@ public class ManagementSystem extends JFrame {
     		@Override
     		public void mousePressed(MouseEvent e) {
     			lbl_add.setBackground(new Color(33, 136, 56));
-    			addCargo();
+    			addDish();
     		}
     		
     		@Override
@@ -555,7 +527,7 @@ public class ManagementSystem extends JFrame {
     		@Override
     		public void mousePressed(MouseEvent e) {
     			lbl_adjust.setBackground(new Color(0, 86, 179));
-    			editCargo();
+    			editDish();
     		}
     		
     		@Override
@@ -587,7 +559,7 @@ public class ManagementSystem extends JFrame {
     		@Override
     		public void mousePressed(MouseEvent e) {
     			lbl_remove.setBackground(new Color(176, 42, 55));
-    			deleteCargo();
+    			deleteDish();
     		}
     		
     		@Override
@@ -598,214 +570,189 @@ public class ManagementSystem extends JFrame {
     	
     	JScrollPane scrollpane_show_table = new JScrollPane();
     	scrollpane_show_table.setBounds(233, 217, 1009, 305);
-    	cargoPanel.add(scrollpane_show_table);
+    	menuPanel.add(scrollpane_show_table);
     	
     	Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
     	scrollpane_show_table.setBorder(roundedBorder);
     	
-    	CargoSelected = null;
+    	DishSelected = null;
     	
-    	Cargo_table_model = new DefaultTableModel(
+    	Dish_table_model = new DefaultTableModel(
 				new Object[][] {
 				},
 				new String[] {
-					"Mã Hàng Hóa", "Tên Hàng Hóa", "Số Lượng Tồn Kho", "Giá", "Ngày Nhập", "Ngày Hết Hạn"
+					"Mã Món Ăn", "Tên Món Ăn", "Giá", "Loại Món Ăn"
 				}
 			);
 		
-		CargoTable = new JTable();
-		CargoTable.setModel(Cargo_table_model);
-		CargoTable.getTableHeader().setReorderingAllowed(false);
-		CargoTable.setFont(new Font("Arial", Font.PLAIN, 20));
-		CargoTable.getColumnModel().getColumn(0).setPreferredWidth(150);
-		CargoTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-		CargoTable.getColumnModel().getColumn(2).setPreferredWidth(200);
-		CargoTable.getColumnModel().getColumn(3).setPreferredWidth(150);
-		CargoTable.getColumnModel().getColumn(4).setPreferredWidth(150);
-		CargoTable.getColumnModel().getColumn(5).setPreferredWidth(150);
+		DishTable = new JTable();
+		DishTable.setModel(Dish_table_model);
+		DishTable.getTableHeader().setReorderingAllowed(false);
+		DishTable.setFont(new Font("Arial", Font.PLAIN, 20));
+		DishTable.getColumnModel().getColumn(0).setPreferredWidth(150);
+		DishTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+		DishTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+		DishTable.getColumnModel().getColumn(3).setPreferredWidth(150);
 		Font headerFont = new Font("Arial", Font.BOLD, 18);
-		CargoTable.getTableHeader().setPreferredSize(new Dimension(CargoTable.getTableHeader().getWidth(), 30));
-		CargoTable.getTableHeader().setFont(headerFont);
-		CargoTable.setRowHeight(30);
+		DishTable.getTableHeader().setPreferredSize(new Dimension(DishTable.getTableHeader().getWidth(), 30));
+		DishTable.getTableHeader().setFont(headerFont);
+		DishTable.setRowHeight(30);
     	
-		CargoTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+		DishTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
-                    int selectedRow = CargoTable.getSelectedRow();
+                    int selectedRow = DishTable.getSelectedRow();
                     if (selectedRow != -1) {
-                        tf_cargo_id.setText(CargoTable.getValueAt(selectedRow, 0).toString());
-                        tf_cargo_name.setText(CargoTable.getValueAt(selectedRow, 1).toString());
-                        tf_stock_quantity.setText(CargoTable.getValueAt(selectedRow, 2).toString());
-                        tf_price.setText(CargoTable.getValueAt(selectedRow, 3).toString());
-                        tf_suppiler.setText(CargoTable.getValueAt(selectedRow, 4).toString());
-                        tf_expiration_date.setText(CargoTable.getValueAt(selectedRow, 5).toString());
+                        tf_dish_id.setText(DishTable.getValueAt(selectedRow, 0).toString());
+                        tf_dish_name.setText(DishTable.getValueAt(selectedRow, 1).toString());
+                        tf_dish_price.setText(DishTable.getValueAt(selectedRow, 2).toString());
+                        tf_dish_category.setText(DishTable.getValueAt(selectedRow, 3).toString());
                         
-                        CargoSelected = CargoTable.getValueAt(selectedRow, 0).toString();
+                        DishSelected = DishTable.getValueAt(selectedRow, 0).toString();
                     }
                 }
             }
         });
 		
-		scrollpane_show_table.setViewportView(CargoTable);
-    	loadCargo();
-    	return cargoPanel;
+		scrollpane_show_table.setViewportView(DishTable);
+    	loadDish();
+    	return menuPanel;
     }
     
-    public void loadCargo() {
-    	CargoDAO.loadData();
-		for(Cargo cargo : CargoDAO.map.values()) {
-	        Object[] newRow = {cargo.getCargo_id(), cargo.getCargo_name(), cargo.getStock_quantity(), cargo.getPrice(), cargo.getSuppiler(), cargo.getExpiration_date()};
-	        Cargo_table_model.addRow(newRow);
+    public void loadDish() {
+    	DishDAO.loadData();
+		for(Dish dish : DishDAO.map.values()) {
+	        Object[] newRow = {dish.getDishID(), dish.getDishName(), dish.getDishPrice(), dish.getDishCategory()};
+	        Dish_table_model.addRow(newRow);
 		}
     }
     
     public void sortByName() {
-    	ArrayList<Cargo> ls = new ArrayList<>(CargoDAO.map.values());
+    	ArrayList<Dish> ls = new ArrayList<>(DishDAO.map.values());
     }
     
-    public void addCargo() {
-        JTextField tfCargoID = new JTextField();
-        JTextField tfCargoName = new JTextField();
-        JTextField tfQuantity = new JTextField();
+    public void addDish() {
+        JTextField tfDishID = new JTextField();
+        JTextField tfDishName = new JTextField();
         JTextField tfPrice = new JTextField();
-        JTextField tfSuppiler = new JTextField();
-        JTextField tfExpire = new JTextField();
+        JTextField tfCategory = new JTextField();
         
         JPanel panel = new JPanel(new GridLayout(6, 2));
-        panel.add(new JLabel("Mã Hàng Hóa:"));
-        panel.add(tfCargoID);
-        panel.add(new JLabel("Tên Hàng Hóa:"));
-        panel.add(tfCargoName);
-        panel.add(new JLabel("Số Lượng:"));
-        panel.add(tfQuantity);
+        panel.add(new JLabel("Mã Món Ăn:"));
+        panel.add(tfDishID);
+        panel.add(new JLabel("Tên Món Ăn:"));
+        panel.add(tfDishName);
         panel.add(new JLabel("Giá Tiền:"));
         panel.add(tfPrice);
-        panel.add(new JLabel("Ngày Nhập Hàng:"));
-        panel.add(tfSuppiler);
-        panel.add(new JLabel("Ngày Hết Hạn:"));
-        panel.add(tfExpire);
+        panel.add(new JLabel("Loại Món Ăn:"));
+        panel.add(tfCategory);
 
-        int result = JOptionPane.showConfirmDialog(null, panel, "Thêm hàng mới", JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(null, panel, "Thêm món mới", JOptionPane.OK_CANCEL_OPTION);
 
         // Xử lý nếu người dùng nhấn OK
         if (result == JOptionPane.OK_OPTION) {
-            String cargoID = tfCargoID.getText();
-            if (cargoID.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Mã hàng hóa không được để trống!");
+            String dishID = tfDishID.getText();
+            if (dishID.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Mã món ăn không được để trống!");
                 return;
             }
 
             // Lấy thông tin, nếu trống thì chuyển thành "null"
-            String cargoName = tfCargoName.getText().trim().isEmpty() ? null : tfCargoName.getText().trim();
-            String quantity = tfQuantity.getText().trim().isEmpty() ? null : tfQuantity.getText().trim();
+            String dishName = tfDishName.getText().trim().isEmpty() ? null : tfDishName.getText().trim();
             String price = tfPrice.getText().trim().isEmpty() ? null : tfPrice.getText().trim();
-            Date suppiler = tfSuppiler.getText().trim().isEmpty() ? null : Date.valueOf(tfSuppiler.getText().trim());
-            Date expire = tfExpire.getText().trim().isEmpty() ? null : Date.valueOf(tfExpire.getText().trim());
+            Double category = tfCategory.getText().trim().isEmpty() ? null : Double.valueOf(tfCategory.getText().trim());
             
             try {
-                Cargo cargo = new Cargo(cargoID, cargoName, quantity, price, suppiler, expire);
-                CargoDAO.addCargo(cargo);
-                Object[] newRow = {cargo.getCargo_id(), cargo.getCargo_name(), cargo.getStock_quantity(), cargo.getPrice(), cargo.getSuppiler(), cargo.getExpiration_date()};
-                Cargo_table_model.addRow(newRow);
+                Dish dish = new Dish(dishID, dishName, price, category);
+                DishDAO.addDish(dish);
+                Object[] newRow = {dish.getDishID(), dish.getDishName(), dish.getDishPrice(), dish.getDishCategory()};
+                Dish_table_model.addRow(newRow);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
             }
         }
     }
 
-    public void editCargo() {
-        int selectedRow = CargoTable.getSelectedRow();
+    public void editDish() {
+        int selectedRow = DishTable.getSelectedRow();
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(null, "Vui lòng chọn một hàng hóa để sửa!");
             return;
         }
 
         // Lấy thông tin hiện tại từ hàng được chọn
-        String currentCargoID = Cargo_table_model.getValueAt(selectedRow, 0).toString();
-        String currentCargoName = Cargo_table_model.getValueAt(selectedRow, 1) != null ? Cargo_table_model.getValueAt(selectedRow, 1).toString() : "";
-        String currentQuantity = Cargo_table_model.getValueAt(selectedRow, 2) != null ? Cargo_table_model.getValueAt(selectedRow, 2).toString() : "";
-        String currentPrice = Cargo_table_model.getValueAt(selectedRow, 3) != null ? Cargo_table_model.getValueAt(selectedRow, 3).toString() : "";
-        Date currentSuppiler = Cargo_table_model.getValueAt(selectedRow, 4) != null ? Date.valueOf(Cargo_table_model.getValueAt(selectedRow, 4).toString()) : null;
-        Date currentExpire = Cargo_table_model.getValueAt(selectedRow, 5) != null ? Date.valueOf(Cargo_table_model.getValueAt(selectedRow, 5).toString()) : null;
-
+        String currentDishID = Dish_table_model.getValueAt(selectedRow, 0).toString();
+        String currentDishName = Dish_table_model.getValueAt(selectedRow, 1) != null ? Dish_table_model.getValueAt(selectedRow, 1).toString() : "";
+        String currentPrice = Dish_table_model.getValueAt(selectedRow, 2) != null ? Dish_table_model.getValueAt(selectedRow, 2).toString() : "";
+        Double currentCategory = Dish_table_model.getValueAt(selectedRow, 3) != null ? Double.valueOf(Dish_table_model.getValueAt(selectedRow, 3).toString()) : null;
         
         // Tạo đối tượng hàng hóa hiện tại
-        Cargo currentCargo = new Cargo(currentCargoID, currentCargoName, currentQuantity, currentPrice, currentSuppiler, currentExpire);
+        Dish currentDish = new Dish(currentDishID, currentDishName, currentPrice, currentCategory);
         
         // Tạo các trường nhập liệu
-        JTextField tfCargoID = new JTextField(currentCargoID);
-        tfCargoID.setEditable(false);
-        JTextField tfCargoName = new JTextField(currentCargoName);
-        JTextField tfQuantity = new JTextField(currentQuantity);
+        JTextField tfDishID = new JTextField(currentDishID);
+        tfDishID.setEditable(false);
+        JTextField tfDishName = new JTextField(currentDishName);
         JTextField tfPrice = new JTextField(currentPrice);
-        JTextField tfSuppiler = new JTextField(currentSuppiler.toString());
-        JTextField tfExpire = new JTextField(currentExpire.toString());
-
+        JTextField tfCategory = new JTextField(currentCategory.toString());
+        
         // Tạo bảng nhập liệu
         JPanel panel = new JPanel(new GridLayout(6, 2));
-        panel.add(new JLabel("Mã Hàng Hóa:"));
-        panel.add(tfCargoID);
-        panel.add(new JLabel("Tên Hàng Hóa:"));
-        panel.add(tfCargoName);
-        panel.add(new JLabel("Số Lượng:"));
-        panel.add(tfQuantity);
+        panel.add(new JLabel("Mã Món Ăn:"));
+        panel.add(tfDishID);
+        panel.add(new JLabel("Tên Món Ăn:"));
+        panel.add(tfDishName);
         panel.add(new JLabel("Giá Tiền:"));
         panel.add(tfPrice);
-        panel.add(new JLabel("Ngày Nhập Hàng:"));
-        panel.add(tfSuppiler);
-        panel.add(new JLabel("Ngày Hết Hạn:"));
-        panel.add(tfExpire);
+        panel.add(new JLabel("Loại Món Ăn:"));
+        panel.add(tfCategory);
 
-        int result = JOptionPane.showConfirmDialog(null, panel, "Sửa thông tin hàng hóa", JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(null, panel, "Sửa thông tin món ăn", JOptionPane.OK_CANCEL_OPTION);
 
         // Xử lý nếu người dùng nhấn OK
         if (result == JOptionPane.OK_OPTION) {
-            String cargoID = tfCargoID.getText().trim();
-            if (cargoID.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Mã hàng hóa không được để trống!");
+            String dishID = tfDishID.getText().trim();
+            if (dishID.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Mã món ăn không được để trống!");
                 return;
             }
 
             // Lấy thông tin, nếu trống thì chuyển thành "null"
-            String name = tfCargoName.getText().trim().isEmpty() ? null : tfCargoName.getText().trim();
-            String quantity = tfQuantity.getText().trim().isEmpty() ? null : tfQuantity.getText().trim();
+            String name = tfDishName.getText().trim().isEmpty() ? null : tfDishName.getText().trim();
             String price = tfPrice.getText().trim().isEmpty() ? null : tfPrice.getText().trim();
-            Date suppiler = tfSuppiler.getText().trim().isEmpty() ? null : Date.valueOf(tfSuppiler.getText().trim());
-            Date expire = tfExpire.getText().trim().isEmpty() ? null : Date.valueOf(tfExpire.getText().trim());
+            Double category = tfCategory.getText().trim().isEmpty() ? null : Double.valueOf(tfCategory.getText().trim());
 
             try {
-                Cargo newCargo = new Cargo(cargoID, name, quantity, price, suppiler, expire);
-                CargoDAO.updateCargo(currentCargo, newCargo);
-                Cargo_table_model.setValueAt(newCargo.getCargo_name(), selectedRow, 1);
-                Cargo_table_model.setValueAt(newCargo.getStock_quantity(), selectedRow, 2);
-                Cargo_table_model.setValueAt(newCargo.getPrice(), selectedRow, 3);
-                Cargo_table_model.setValueAt(newCargo.getSuppiler(), selectedRow, 4);
-                Cargo_table_model.setValueAt(newCargo.getExpiration_date(), selectedRow, 5);
+                Dish newDish = new Dish(dishID, name, price, category);
+                DishDAO.updateDish(currentDish, newDish);
+                Dish_table_model.setValueAt(newDish.getDishName(), selectedRow, 1);
+                Dish_table_model.setValueAt(newDish.getDishPrice(), selectedRow, 2);
+                Dish_table_model.setValueAt(newDish.getDishCategory(), selectedRow, 3);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
             }
         }
     }
 
-    public void deleteCargo() {
-        int selectedRow = CargoTable.getSelectedRow();
+    public void deleteDish() {
+        int selectedRow = DishTable.getSelectedRow();
         
         // Kiểm tra nếu có dòng được chọn
         if (selectedRow >= 0) {
-            String cargoID = CargoTable.getValueAt(selectedRow, 0).toString();
+            String dishID = DishTable.getValueAt(selectedRow, 0).toString();
             
             // Gọi phương thức xóa hàng hóa trong cơ sở dữ liệu
-            boolean success = CargoDAO.deleteCargo(cargoID);
+            boolean success = DishDAO.deleteDish(dishID);
             
             if (success) {
                 // Nếu xóa thành công, xóa dòng trong bảng
-                Cargo_table_model.removeRow(selectedRow);
+            	Dish_table_model.removeRow(selectedRow);
             } else {
-                JOptionPane.showMessageDialog(null, "Xóa hàng hóa thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Xóa món ăn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
             }
         } else {
-            JOptionPane.showMessageDialog(null, "Vui lòng chọn một hàng hóa để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
         }
     }
     

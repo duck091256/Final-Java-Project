@@ -3,14 +3,14 @@ package model;
 public class Dish {
 	private String dishID;
 	private String dishName;
-	private int dishQuantity;
+	private String dishCategory;
 	private double dishPrice;
 	
-	public Dish(String dishID, String dishName, int dishQuantity, double dishPrice) {
+	public Dish(String dishID, String dishName, String dishCategory, double dishPrice) {
 		super();
 		this.dishID = dishID;
 		this.dishName = dishName;
-		this.dishQuantity = dishQuantity;
+		this.dishCategory = dishCategory;
 		this.dishPrice = dishPrice;
 	}
 
@@ -30,12 +30,12 @@ public class Dish {
 		this.dishName = dishName;
 	}
 
-	public int getDishQuantity() {
-		return dishQuantity;
+	public String getDishCategory() {
+		return dishCategory;
 	}
 
-	public void setDishQuantity(int dishQuantity) {
-		this.dishQuantity = dishQuantity;
+	public void setDishCategory(String dishCategory) {
+		this.dishCategory = dishCategory;
 	}
 
 	public double getDishPrice() {

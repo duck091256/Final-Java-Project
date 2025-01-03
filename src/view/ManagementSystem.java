@@ -47,18 +47,18 @@ import java.awt.CardLayout;
 public class ManagementSystem extends JFrame {
 
     private static final long serialVersionUID = 1L;
-    private int tableCountFloor1 = 12, tableCountFloor2 = 15;
+    private int tableCountFloor1 = 12, tableCountFloor2 = 15, dishCount = 10;
     private JPanel contentPane;
-    private JPanel grip_mode_show_table_floor1, grip_mode_show_table_floor2;
+    private JPanel grip_mode_show_table_floor1, grip_mode_show_table_floor2, grip_mode_show_menu;
     private RoundedLabelEffect lbl_switch_table_floor1, lbl_switch_table_floor2;
     private Boolean checkFloor1 = false, checkFloor2 = true;
-    private JScrollPane table_mode_show_table;
-    private JPanel floor1, floor2;
-    private RoundedLabel lbl_switch_table, lbl_switch_grip;
+    private JScrollPane table_mode_show_table, table_mode_show_table_for_menu;
+    private JPanel menu, floor1, floor2;
+    private RoundedLabel lbl_switch_grip_for_menu, lbl_switch_table_for_menu, lbl_switch_table, lbl_switch_grip;
     private Boolean overallCheckStatus = false, dishCheckStatus = true, tableCheckStatus = true, billCheckStatus = true, employeeCheckStatus = true;
     private JLabel lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee;
-    private CardLayout cardLayout, switch_CardLayout;
-    private JPanel panel_contain_CardLayout, panel_contain_switch_CardLayout;
+    private CardLayout cardLayout, switch_CardLayout_for_menu, switch_CardLayout;
+    private JPanel panel_contain_CardLayout, panel_contain_switch_CardLayout, panel_contain_switch_CardLayout_for_menu;
     private JTable DishTable, FloorTable, StaffTable;
     private DefaultTableModel Dish_table_model, Floor_table_model, Emp_table_model;
     private JTextField tf_employee_id;
@@ -202,6 +202,7 @@ public class ManagementSystem extends JFrame {
         	@Override
         	public void mouseClicked(MouseEvent e) {
         		cardLayout.show(panel_contain_CardLayout, "Menu");
+        		switch_CardLayout_for_menu.show(panel_contain_switch_CardLayout_for_menu, "TableModeForMenu");
         		changeBoldToPlain(lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee);
         		lbl_dish.setFont(new Font("Arial", Font.BOLD, 18));
                 lbl_dish.setForeground(new Color(255, 255, 255));
@@ -411,6 +412,90 @@ public class ManagementSystem extends JFrame {
     	menuPanel.setBackground(new Color(255, 255, 255));
     	menuPanel.setLayout(null);
     	
+    	lbl_switch_grip_for_menu = new RoundedLabel("Chế độ hiển thị lưới");
+    	lbl_switch_grip_for_menu.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_switch_grip_for_menu.setForeground(Color.BLACK);
+    	lbl_switch_grip_for_menu.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_switch_grip_for_menu.setCornerRadius(10);
+    	lbl_switch_grip_for_menu.setBackground(new Color(211, 211, 211));
+    	lbl_switch_grip_for_menu.setBounds(1082, 180, 160, 40);
+    	menuPanel.add(lbl_switch_grip_for_menu);
+    	
+    	lbl_switch_grip_for_menu.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_switch_grip_for_menu.setForeground(Color.WHITE);
+    			lbl_switch_grip_for_menu.setBackground(new Color(169, 169, 169));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_switch_grip_for_menu.setForeground(Color.BLACK);
+    			lbl_switch_grip_for_menu.setBackground(new Color(211, 211, 211));
+    		}
+    		
+    		@Override
+    		public void mouseClicked(MouseEvent e) {
+    			switch_CardLayout_for_menu.show(panel_contain_switch_CardLayout_for_menu, "GripModeForMenu");
+    			lbl_switch_grip_for_menu.setVisible(false);
+    	        lbl_switch_table_for_menu.setVisible(true);
+       		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_switch_grip_for_menu.setForeground(Color.WHITE);
+    			lbl_switch_grip_for_menu.setBackground(new Color(105, 105, 105));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_switch_grip_for_menu.setForeground(Color.WHITE);
+    			lbl_switch_grip_for_menu.setBackground(new Color(169, 169, 169));
+    		}
+		});
+    	
+    	lbl_switch_table_for_menu = new RoundedLabel("Chế độ hiển thị bảng");
+    	lbl_switch_table_for_menu.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_switch_table_for_menu.setForeground(Color.BLACK);
+    	lbl_switch_table_for_menu.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_switch_table_for_menu.setCornerRadius(10);
+    	lbl_switch_table_for_menu.setBackground(new Color(211, 211, 211));
+    	lbl_switch_table_for_menu.setBounds(1082, 180, 160, 40);
+    	menuPanel.add(lbl_switch_table_for_menu);
+    	
+    	lbl_switch_table_for_menu.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_switch_table_for_menu.setForeground(Color.WHITE);
+    			lbl_switch_table_for_menu.setBackground(new Color(169, 169, 169));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_switch_table_for_menu.setForeground(Color.BLACK);
+    			lbl_switch_table_for_menu.setBackground(new Color(211, 211, 211));
+    		}
+    		
+    		@Override
+    		public void mouseClicked(MouseEvent e) {
+    			switch_CardLayout_for_menu.show(panel_contain_switch_CardLayout_for_menu, "TableModeForMenu");
+    			lbl_switch_table_for_menu.setVisible(false);
+    			lbl_switch_grip_for_menu.setVisible(true);
+       		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_switch_table_for_menu.setForeground(Color.WHITE);
+    			lbl_switch_table_for_menu.setBackground(new Color(105, 105, 105));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_switch_table_for_menu.setForeground(Color.WHITE);
+    			lbl_switch_table_for_menu.setBackground(new Color(169, 169, 169));
+    		}
+		});
+    	
     	JPanel panel_filter = new JPanel();
     	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
     	panel_filter.setBounds(38, 34, 149, 488);
@@ -568,13 +653,31 @@ public class ManagementSystem extends JFrame {
     	    }
 		});
     	
-    	JScrollPane scrollpane_show_table = new JScrollPane();
-    	scrollpane_show_table.setBounds(233, 217, 1009, 305);
-    	menuPanel.add(scrollpane_show_table);
+    	switch_CardLayout_for_menu = new CardLayout();
+        panel_contain_switch_CardLayout_for_menu = new JPanel(switch_CardLayout_for_menu);
+        panel_contain_switch_CardLayout_for_menu.setBackground(Color.WHITE);
+        panel_contain_switch_CardLayout_for_menu.setBounds(233, 224, 1009, 298);
+        panel_contain_switch_CardLayout_for_menu.add(switchTableModeForMenu(), "TableModeForMenu");
+        panel_contain_switch_CardLayout_for_menu.add(switchGripModeForMenu(), "GripModeForMenu"); 
+        
+        menuPanel.add(panel_contain_switch_CardLayout_for_menu);
+    	menuPanel.setLayout(null);
+    	
+    	menuPanel.revalidate();
+    	menuPanel.repaint();
+    	
+    	return menuPanel;
+    }
+    
+private JScrollPane switchTableModeForMenu() {
+    	
+    	// Chế độ bảng (Switch Mode)
+    	table_mode_show_table_for_menu = new JScrollPane();
+    	table_mode_show_table_for_menu.setBounds(38, 224, 1204, 298);
     	
     	Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
-    	scrollpane_show_table.setBorder(roundedBorder);
-    	
+    	table_mode_show_table_for_menu.setBorder(roundedBorder);
+        
     	DishSelected = null;
     	
     	Dish_table_model = new DefaultTableModel(
@@ -615,9 +718,65 @@ public class ManagementSystem extends JFrame {
             }
         });
 		
-		scrollpane_show_table.setViewportView(DishTable);
+		table_mode_show_table_for_menu.setViewportView(DishTable);
     	loadDish();
-    	return menuPanel;
+		
+		return table_mode_show_table_for_menu;
+    }
+    
+    private JPanel switchGripModeForMenu() {
+    	
+    	// Chế độ lưới (Switch Mode)
+    	grip_mode_show_menu = new JPanel();
+    	grip_mode_show_menu.setBackground(Color.WHITE);
+    	grip_mode_show_menu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	grip_mode_show_menu.setBounds(38, 224, 1204, 298);
+    	grip_mode_show_menu.setLayout(null);
+        
+        menu = new JPanel();
+        menu.setBackground(Color.WHITE);
+        menu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        menu.setBounds(0, 0, 1202, 296);
+        menu.setLayout(new GridLayout(0, 5, 10, 10));
+    	
+        loadMenu();
+        
+    	JScrollPane scrollPane = new JScrollPane(menu);
+        scrollPane.setBounds(0, 0, 1009, 298);
+        grip_mode_show_menu.add(scrollPane);
+    	
+    	return grip_mode_show_menu;
+    }
+    
+    private void loadMenu() {
+        for (int i = 1; i <= dishCount; i++) {
+        	addDishToMenu("Món " + i);
+        }
+    }
+    
+    private void addNewDish() {
+        dishCount++;
+        addDishToMenu("Món " + dishCount);
+        menu.revalidate(); // Làm mới giao diện
+        menu.repaint();
+    }
+    
+    private void addDishToMenu(String dish) {
+    	JPanel JPmenu = new JPanel();
+    	JPmenu.setBackground(Color.WHITE);
+    	JPmenu.setPreferredSize(new Dimension(100, 100));
+    	JPmenu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        JLabel lbl_dish = new JLabel("<html>" + dish + "<br>");
+        JPmenu.add(lbl_dish);
+        
+        // Sự kiện khi nhấn
+        JPmenu.addMouseListener(new MouseAdapter() {
+        	@Override
+        	public void mouseClicked(MouseEvent e) {
+        		JOptionPane.showMessageDialog(null, "Bạn đã chọn " + dish);
+        	}
+		});
+        menu.add(JPmenu);
     }
     
     public void loadDish() {
@@ -774,7 +933,7 @@ public class ManagementSystem extends JFrame {
     	lbl_switch_grip.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_switch_grip.setCornerRadius(10);
     	lbl_switch_grip.setBackground(new Color(211, 211, 211));
-    	lbl_switch_grip.setBounds(1065, 180, 166, 40);
+    	lbl_switch_grip.setBounds(1082, 180, 160, 40);
     	floorPanel.add(lbl_switch_grip);
     	
     	lbl_switch_grip.addMouseListener(new MouseAdapter() {
@@ -818,7 +977,7 @@ public class ManagementSystem extends JFrame {
     	lbl_switch_table.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_switch_table.setCornerRadius(10);
     	lbl_switch_table.setBackground(new Color(211, 211, 211));
-    	lbl_switch_table.setBounds(1065, 180, 166, 40);
+    	lbl_switch_table.setBounds(1082, 180, 160, 40);
     	floorPanel.add(lbl_switch_table);
     	
     	lbl_switch_table.addMouseListener(new MouseAdapter() {

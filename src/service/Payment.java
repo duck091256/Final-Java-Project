@@ -100,7 +100,7 @@ public class Payment {
     }
 
     private static void storeSession(Connection conn, String sessionID, String staffID, String tableID, String billID) {
-        String sql = "INSERT INTO Session VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO session VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, sessionID);
             stmt.setString(1, staffID);

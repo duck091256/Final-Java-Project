@@ -1,11 +1,11 @@
 package model;
 
-public class UsedDish {
+public class DetailReceipt {
 	private String dishID;
-	private int billID;
+	private String billID;
 	private int dishQuantity;
 	
-	public UsedDish(String dishID, int billID, int dishQuantity) {
+	public DetailReceipt(String dishID, String billID, int dishQuantity) {
 		super();
 		this.dishID = dishID;
 		this.billID = billID;
@@ -20,11 +20,11 @@ public class UsedDish {
 		this.dishID = dishID;
 	}
 
-	public int getBillID() {
+	public String getBillID() {
 		return billID;
 	}
 
-	public void setBillID(int billID) {
+	public void setBillID(String billID) {
 		this.billID = billID;
 	}
 

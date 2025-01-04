@@ -5,10 +5,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import javax.swing.JOptionPane;
 
 import database.JDBCUtil;
+import model.Staff;
 import model.Table;
 
 public class TableDAO {
@@ -21,18 +25,15 @@ public class TableDAO {
 		}
 		return instance;
 	}
-	
-	public static HashMap<String, Table> map;
 	public static ArrayList<Table> list;
 
 	/**
-	 * Tải tất dữ liệu của nhân viên từ database vào list và map của chương trình
+	 * Tải tất dữ liệu của nhân viên từ database vào list và canOrder của chương trình
 	 * 
 	 * Sử dụng JDBC để thực hiện các câu lệnh truy vấn, close database sau khi hoàn tất.
 	 *
 	 */
 	public static void loadData() {
-		map = new HashMap<>();
 		list = new ArrayList<>();
 		
 		String sql = "SELECT * FROM dining_table";
@@ -50,7 +51,6 @@ public class TableDAO {
                         rs.getString("responsibleBy"),
                         rs.getString("clientNum")
 				);
-				map.put(table.getTableID(), table);
 				list.add(table);
 			}
 			
@@ -60,92 +60,85 @@ public class TableDAO {
 	}
 
 	/**
-	 * Thêm hàng hóa vào HashMap và List hiện tại của chương trình
-	 * 
+	 * Thêm table vào list
+	 *
 	 * Hàm sẽ kiểm tra PRIMARY KEY đã tồn tại hay chưa?
 	 * 
-	 * @param cargo nhận từ input người dùng nhập
+	 * @param table nhận từ input người dùng nhập
 	 * @return true nếu thành công, false nếu thất bại
 	 */
 	public static boolean addTable(Table table) {
-		
-		if (TableDAO.map.containsKey(table.getTableID())) {
-	        JOptionPane.showMessageDialog(null, "Thêm bàn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
+
+		if (getTable(table.getTableID()) != null) {
+			JOptionPane.showMessageDialog(null, "Thêm bàn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
 		TableDAO.list.add(table);
-		TableDAO.map.put(table.getTableID(), table);
         JOptionPane.showMessageDialog(null, "Đã thêm bàn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 		return true;
 	}
 
 	/**
-	 * Tìm kiếm và trả về hàng hóa từ HashMap và List hiện tại của chương trình
-	 * 
+	 * Tìm kiếm và trả về table từ tableID tử người dùng nhập
+	 *
 	 * Hàm sẽ kiểm tra PRIMARY KEY đã tồn tại hay chưa?
 	 * 
-	 * @param cargo_id - Nhận vào ID của hàng hóa để tìm kiếm
-	 * @return trả về Cargo được sử dụng để load lại vào giao diện hoặc null
+	 * @param tableID - Nhận vào ID của hàng hóa để tìm kiếm
+	 * @return trả về Table được sử dụng để load lại vào giao diện hoặc null
 	 */
 	public static Table getTable(String tableID) {
-		return TableDAO.map.getOrDefault(tableID, null);
+		Optional<Table> result = list.stream().filter(new Predicate<Table>() {
+			@Override
+			public boolean test(Table table) {
+				return table.getTableID().equals(tableID);
+			}
+		}).findFirst();
+
+		return result.orElse(null);
 	}
 	
 	/**
-	 * Cập nhật hàng hóa đã có trong HashMap và list hiện tại của chương trình
+	 * Thay đổi người phụ trách của bàn
 	 * 
-	 * Hàm sẽ kiểm tra PRIMARY KEY đã tồn tại hay chưa?
-	 * Cần truyền vào cargo trước khi update, là cargo được click vào để update
-	 * 
-	 * @param cargo là cargo được chọn để update, các thông tin nhận từ input người dùng nhập
-	 * @return true nếu thành công, false nếu thất bại
+	 * Hàm kiểm tra người phụ trách mới có tồn tại không?
+	 *
+	 * @param tableID ID của bàn cần thay đổi
+	 * @param staffID ID của người phụ trách mới
+	 * @return trả về true nếu thành công, false nếu thất bại
 	 */
-	public static boolean checkOrder(Table table, Table newTable) {
-		
-		/* Nếu không cập nhật ID của Staff **/
-		if (newTable.getTableID().equals(table.getTableID())) {
-			TableDAO.map.put(table.getTableID(), newTable);
-			JOptionPane.showMessageDialog(null, "Cập nhật hàng hóa thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-			return true;
-		}
-		/* Nếu cập nhật ID của Staff */
-		// Nếu ID mới đã tồn tại
-		if (TableDAO.map.containsKey(newTable.getTableID())) {
-			JOptionPane.showMessageDialog(null, "Cập nhật hàng hóa thất bại XXX", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-			return false;
-		}
+	public static boolean updateResponsible(String tableID, String staffID) {
+		Table table = getTable(tableID);
+		Staff staff = StaffDAO.getStaff(staffID);
 
-		// Nếu ID mới chưa tồn tại
-		TableDAO.map.remove(table.getTableID());
-		TableDAO.map.put(newTable.getTableID(), newTable);
+		if (table == null || staff == null) return false;
+
+		table.setResponsibleBy(staffID);
 		return true;
 	}
 
 	/**
-	 * Cập nhật nhân viên đã có trong HashMap và list hiện tại của chương trình
+	 * Xóa table dựa vào tableID
 	 *
-	 * Hàm sẽ kiểm tra PRIMARY KEY đã tồn tại hay chưa?
-	 * Cần truyền vào staff trước khi update, là staff được click vào để update
+	 * Hàm sẽ kiểm tra tableID có tồn tại không và thực hiện xóa bàn
 	 *
-	 * @param id là staff được chọn để update, các thông tin nhận từ input người dùng nhập
+	 * @param tableID id của bàn cần xóa
 	 * @return true nếu thành công, false nếu thất bại
 	 */
-	public static boolean deleteCargo(String id) {
-		if (!TableDAO.map.containsKey(id)) {
-			JOptionPane.showMessageDialog(null, "Xóa hàng hóa thất bại XXX", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-			return false;
-		}
+	public static boolean deleteTable(String tableID) {
+		int preSize = list.size();
+		list.removeIf(new Predicate<Table>() {
+			@Override
+			public boolean test(Table table) {
+				return table.getTableID().equals(tableID);
+			}
+		});
 
-		Table table = TableDAO.map.get(id);
-		CargoDAO.map.remove(id);
-		list.remove(table);
-		JOptionPane.showMessageDialog(null, "Xóa hàng hóa thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-		return true;
+		return preSize != list.size();
 	}
 	
 	/**
-	 * Lưu trữ tất dữ liệu của nhân viên vào database
+	 * Lưu trữ tất dữ liệu của table vào database
 	 * 
 	 * Sử dụng JDBC để thực hiện các câu lệnh truy vấn, close database sau khi hoàn tất.
 	 *
@@ -190,7 +183,7 @@ public class TableDAO {
 	private static void insertData(Connection conn) {
 		String sql = "INSERT INTO dining_table VALUES (?, ?, ?, ?, ?, ?)";
 		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-			for (Table table : map.values()) {
+			for (Table table : list) {
 				stmt.setString(1, table.getTableID());
 				stmt.setString(2, table.getFloorStay());
 				stmt.setString(3, table.getOperatingStatus());

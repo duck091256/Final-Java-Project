@@ -6,6 +6,8 @@ public class Table {
 	private String operatingStatus;
 	private String responsibleBy;
 	private String clientNum;
+
+	private boolean available;
 	
 	public Table(String tableID, String floorStay, String operatingStatus, String responsibleBy, String clientNum) {
 		this.tableID = tableID;
@@ -13,6 +15,7 @@ public class Table {
 		this.operatingStatus = operatingStatus;
 		this.responsibleBy = responsibleBy;
 		this.clientNum = clientNum;
+		available = true;
 	}
 	public String getTableID() {
 		return tableID;
@@ -44,5 +47,7 @@ public class Table {
 	public void setClientNum(String clientNum) {
 		this.clientNum = clientNum;
 	}
-	
+
+	public boolean getAvailable() {return available;}
+	public void setAvailable(boolean available) {this.available = available;}
 }

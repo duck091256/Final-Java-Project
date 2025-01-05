@@ -5,6 +5,8 @@ public class Dish {
 	private String dishName;
 	private String dishCategory;
 	private double dishPrice;
+
+	private int quantity;
 	
 	public Dish(String dishID, String dishName, String dishCategory, double dishPrice) {
 		super();
@@ -12,8 +14,14 @@ public class Dish {
 		this.dishName = dishName;
 		this.dishCategory = dishCategory;
 		this.dishPrice = dishPrice;
+		this.quantity = 1;
 	}
 
+	public int getQuantity() {return this.quantity;}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
 	public String getDishID() {
 		return dishID;
 	}

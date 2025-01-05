@@ -6,12 +6,15 @@ import model.Dish;
 import model.Table;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+
+import static data_access_object.BillDAO.storeBill;
+import static data_access_object.DeltailReceiptDAO.storeDetailReceipt;
+import static data_access_object.SessionDAO.storeSession;
+import static service.Ordering.orderList;
 
 public class Payment {
 
@@ -27,13 +30,12 @@ public class Payment {
      * @param table bàn được yêu cầu thanh toán
      * @return true - nếu thành công, false - nếu thất bại
      */
-
     public static boolean payment(Table table) {
         if (table.getAvailable()) return false;
         LocalDateTime time = LocalDateTime.now();
         String billID = getBillID(time);
 
-        ArrayList<Dish> list = Ordering.orderList.getOrDefault(table.getTableID(), new ArrayList<>());
+        ArrayList<Dish> list = orderList.getOrDefault(table.getTableID(), new ArrayList<>());
         ArrayList<DetailReceipt> detailBill = new ArrayList<>();
 
         double totalPrice = 0;
@@ -46,7 +48,7 @@ public class Payment {
         });
 
         totalPrice += list.get(0).getDishPrice();
-        int sub = 1;
+        int sub = list.get(0).getQuantity();
         for (int i = 1; i < list.size(); i++) {
             Dish curDish = list.get(i);
             Dish preDish = list.get(i - 1);
@@ -55,15 +57,17 @@ public class Payment {
 
             if (!curDish.getDishName().equals(preDish.getDishName())) {
                 detailBill.add(new DetailReceipt(preDish.getDishID(), billID, sub));
-                sub = 0;
+                sub = curDish.getQuantity();
             }
-            else sub++;
+            else {
+                sub += preDish.getQuantity();
+            }
         }
 
         totalPrice += list.get(list.size() - 1).getDishPrice();
         detailBill.add(new DetailReceipt(list.get(list.size() - 1).getDishID(), billID, sub));
         table.setAvailable(true);
-        Ordering.orderList.remove(table.getTableID());
+        orderList.remove(table.getTableID());
 
         // Lưu vào database
         try (Connection conn = JDBCUtil.getConnection()) {
@@ -84,48 +88,15 @@ public class Payment {
         return true;
     }
 
-    private static void storeDetailReceipt(Connection conn, ArrayList<DetailReceipt> list) {
-        String sql = "INSERT INTO detail_receipt VALUES(?, ?, ?)";
 
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            for (DetailReceipt d : list) {
-                stmt.setString(1, d.getDishID());
-                stmt.setString(2, d.getBillID());
-                stmt.setInt(3, d.getDishQuantity());
-                stmt.executeUpdate();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void storeSession(Connection conn, String sessionID, String staffID, String tableID, String billID) {
-        String sql = "INSERT INTO session VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, sessionID);
-            stmt.setString(1, staffID);
-            stmt.setString(1, tableID);
-            stmt.setString(1, billID);
-            stmt.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void storeBill(Connection conn, String billID, LocalDateTime time, double totalPrice) {
-        String sql = "INSERT INTO bill VALUES (?, ?, ?, ?)";
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, billID);
-            stmt.setInt(2, 1);
-            stmt.setTimestamp(3, Timestamp.valueOf(time));
-            stmt.setDouble(4, totalPrice);
-            stmt.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
+    /**
+     * Hàm tạo bill ID theo thời gian thực.
+     *
+     * Sử dụng ngày tháng năm và thời gian hiện tại để tạo bill ID -> tránh bị trùng lặp
+     *
+     * @param time thời gian hiện tại
+     * @return chuỗi billID được định dạng dựa theo thời gian thực
+     */
     private static String getBillID(LocalDateTime time) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd_MM_yyyy_HH:mm:ss");
         return time.format(formatter);

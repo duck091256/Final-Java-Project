@@ -1527,7 +1527,7 @@ private JPanel switchGripModeFloor2() {
     
     public void loadFloor() {
     	TableDAO.loadData();
-		for(Table table : TableDAO.map.values()) {
+		for(Table table : TableDAO.list) {
 	        Object[] newRow = {table.getTableID(), table.getFloorStay(), table.getOperatingStatus(), table.getResponsibleBy(), table.getClientNum()};
 	        Floor_table_model.addRow(newRow);
 		}

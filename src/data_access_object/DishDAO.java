@@ -3,9 +3,9 @@ package data_access_object;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.HashMap;
-
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
 import javax.swing.JOptionPane;
 
 import database.JDBCUtil;
@@ -21,36 +21,88 @@ public class DishDAO {
 		}
 		return instance;
 	}
-	public static HashMap<String, Dish> map;
-	public static ArrayList<Dish> list;
+    public static HashMap<String, Dish> map;
+    public static ArrayList<Dish> list;
+    public static ArrayList<Dish> originalList; // Lưu trạng thái ban đầu của danh sách
 
-	public static void loadData() {
-		map = new HashMap<>();
-		list = new ArrayList<>();
-		
-		String sql = "SELECT * FROM dish";
-		
-		try (Connection conn = JDBCUtil.getConnection(); 	// Đổi lại hệ quản trị sau nhé
-			 PreparedStatement stmt = conn.prepareStatement(sql)) {
-			
-			ResultSet rs = stmt.executeQuery();
-			
-			while (rs.next()) {
-				Dish dish = new Dish(
-						rs.getString("dishID"),
+    public static void loadData() {
+        map = new HashMap<>();
+        list = new ArrayList<>();
+
+        String sql = "SELECT * FROM dish";
+
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Dish dish = new Dish(
+                        rs.getString("dishID"),
                         rs.getString("dishName"),
+                        rs.getDouble("dishPrice"),
                         rs.getString("dishCategory"),
-                        rs.getDouble("dishPrice")
-				);
-				map.put(dish.getDishID(), dish);
-				list.add(dish);
-			}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
+                        rs.getString("dishImage")
+                );
+                map.put(dish.getDishID(), dish);
+                list.add(dish);
+                
+                CloneData();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public static void CloneData() {
+        originalList = new ArrayList<>();
+
+        String sql = "SELECT * FROM dish";
+
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Dish dish = new Dish(
+                        rs.getString("dishID"),
+                        rs.getString("dishName"),
+                        rs.getDouble("dishPrice"),
+                        rs.getString("dishCategory"),
+                        rs.getString("dishImage")
+                );
+                originalList.add(dish);
+                Collections.shuffle(originalList);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static List<Dish> handleSort(boolean isChecked) {
+    	if (isChecked) {
+            System.out.println("Sắp xếp theo A -> Z");
+            // Sắp xếp list theo DishID
+            list.sort(Comparator.comparing(Dish::getDishID));
+        } else {
+            System.out.println("Khôi phục lại sắp xếp");
+            // Khôi phục danh sách từ bản sao gốc
+            list.clear();
+            for (Dish dish : originalList) {
+                list.add(dish);
+            }
+        }
+        return list;
+    }
+    
+    public static Dish accessDish(int index) {
+    	Dish dish = list.get(index);
+    	return dish;
+    }
+
 	public static boolean addDish(Dish dish) {
 		
 		if (DishDAO.map.containsKey(dish.getDishID())) {
@@ -101,6 +153,45 @@ public class DishDAO {
 		JOptionPane.showMessageDialog(null, "Xóa món ăn thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 		return true;
 	}
+	
+	public static void updateDishImage(String relativeImagePath, String dishID) {
+		Connection con = JDBCUtil.getConnection();
+		String query = "UPDATE dish "
+				+ "SET dishImage = ? "
+				+ "WHERE dishID =  ?;";
+		try {
+	        PreparedStatement pstmt = con.prepareStatement(query);
+	        pstmt.setString(1, relativeImagePath);
+	        pstmt.setString(2, dishID);
+	        int rowsAffected = pstmt.executeUpdate();
+
+	        if (rowsAffected > 0) {
+	            System.out.println("Dish image updated successfully.");
+	        } else {
+	            System.out.println("No dish found with the specified ID.");
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    } finally {
+	        JDBCUtil.closeConnection(con);
+	    }
+	}
+	
+	public static String getDishImage(String dishID) {
+	    String imagePath = null;
+	    Connection conn = JDBCUtil.getConnection();
+	    String query = "SELECT dishImage FROM dish WHERE dishID = ?";
+	    try (PreparedStatement stmt = conn.prepareStatement(query)) {
+	        stmt.setString(1, dishID);
+	        ResultSet rs = stmt.executeQuery();
+	        if (rs.next()) {
+	            imagePath = rs.getString("dishImage"); // Lấy đường dẫn hình ảnh từ CSDL
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return imagePath;
+	}
 
 	public static void storeData() {
 		try (Connection conn = JDBCUtil.getConnection()) {
@@ -124,19 +215,48 @@ public class DishDAO {
 	}
 
 	private static void insertData(Connection conn) {
-		String sql = "INSERT INTO dish VALUES (?, ?, ?, ?)";
+		String sql = "INSERT INTO dish (dishID, dishName, dishPrice, dishCategory, dishImage) VALUES (?, ?, ?, ?, ?)";
 		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 			for (Dish dish : map.values()) {
 				stmt.setString(1, dish.getDishID());
 				stmt.setString(2, dish.getDishName());
-				stmt.setString(3, dish.getDishCategory());
-				stmt.setDouble(4, dish.getDishPrice());
-
+				stmt.setDouble(3, dish.getDishPrice());
+				stmt.setString(4, dish.getDishCategory());
+				stmt.setString(5, dish.getDishImage());
+				
 				stmt.executeUpdate();
 			}
 			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static int countRows() {
+		int rowCount = 0;
+		try {
+            // Kết nối cơ sở dữ liệu
+            Connection conn = JDBCUtil.getConnection();
+
+            // Câu lệnh SQL
+            String query = "SELECT COUNT(*) AS total_rows FROM dish";
+
+            // Thực thi câu lệnh
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+
+            // Đọc kết quả
+            if (rs.next()) {
+                rowCount = rs.getInt("total_rows");
+                System.out.println("Số dòng trong bảng 'users': " + rowCount);
+            }
+
+            // Đóng kết nối
+            conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		
+		return rowCount;
 	}
 }

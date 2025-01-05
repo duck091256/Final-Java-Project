@@ -18,24 +18,6 @@ public class Dish {
 		this.dishImage = dishImage;
 	}
 
-	@Override
-	public Dish clone() {
-		return new Dish(this.dishID, this.dishName, this.dishPrice, this.dishCategory, this.dishImage);
-	}
-
-	public String getDishImage() {
-		return dishImage;
-	}
-
-	public void setDishImage(String dishImage) {
-		this.dishImage = dishImage;
-	}
-
-	public int getQuantity() {return this.quantity;}
-
-	public void setQuantity(int quantity) {
-		this.quantity = quantity;
-	}
 	public String getDishID() {
 		return dishID;
 	}
@@ -52,6 +34,22 @@ public class Dish {
 		this.dishName = dishName;
 	}
 
+	public double getDishPrice() {
+		return dishPrice;
+	}
+
+	public void setDishPrice(double dishPrice) {
+		this.dishPrice = dishPrice;
+	}
+
+	public int getQuantity() {
+		return quantity;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+
 	public String getDishCategory() {
 		return dishCategory;
 	}
@@ -60,11 +58,11 @@ public class Dish {
 		this.dishCategory = dishCategory;
 	}
 
-	public double getDishPrice() {
-		return dishPrice;
+	public String getDishImage() {
+		return dishImage;
 	}
 
-	public void setDishPrice(double dishPrice) {
-		this.dishPrice = dishPrice;
+	public void setDishImage(String dishImage) {
+		this.dishImage = dishImage;
 	}
 }

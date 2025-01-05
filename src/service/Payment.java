@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 
 import static data_access_object.BillDAO.storeBill;
-import static data_access_object.DeltailReceiptDAO.storeDetailReceipt;
+import static data_access_object.DetailReceiptDAO.storeDetailReceipt;
 import static data_access_object.SessionDAO.storeSession;
 import static service.Ordering.orderList;
 

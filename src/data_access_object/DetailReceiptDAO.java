@@ -6,7 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 
-public class DeltailReceiptDAO {
+public class DetailReceiptDAO {
 
     public static void storeDetailReceipt(Connection conn, ArrayList<DetailReceipt> list) {
         String sql = "INSERT INTO detail_receipt VALUES(?, ?, ?)";

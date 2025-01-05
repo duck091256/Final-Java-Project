@@ -3,6 +3,10 @@ package view;
 import java.awt.EventQueue;
 import java.awt.Point;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -12,6 +16,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 
 import data_access_object.DishDAO;
@@ -26,10 +31,13 @@ import model.Table;
 
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.List;
 import java.awt.Color;
 import java.awt.Dimension;
 
@@ -38,16 +46,21 @@ import javax.swing.JOptionPane;
 
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.MediaTracker;
 
 import javax.swing.border.*;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+
 import java.awt.CardLayout;
+import javax.swing.JCheckBox;
 
 public class ManagementSystem extends JFrame {
 
     private static final long serialVersionUID = 1L;
-    private int tableCountFloor1 = 12, tableCountFloor2 = 15, dishCount = 10;
+    private JLabel dishImage;
+    private int tableCountFloor1 = 12, tableCountFloor2 = 15, dishCount = DishDAO.countRows();
     private JPanel contentPane;
     private JPanel grip_mode_show_table_floor1, grip_mode_show_table_floor2, grip_mode_show_menu;
     private RoundedLabelEffect lbl_switch_table_floor1, lbl_switch_table_floor2;
@@ -402,9 +415,34 @@ public class ManagementSystem extends JFrame {
     }
     
     private JPanel createOverviewPanel() {
-        JPanel panel = new JPanel();
-        panel.add(new JLabel("Trang Tổng quan"));
-        return panel;
+    	JPanel overallPanel = new JPanel();
+    	overallPanel.setBackground(new Color(255, 255, 255));
+    	overallPanel.setLayout(null);
+    	
+    	JPanel panel_rush_hour = new JPanel();
+    	panel_rush_hour.setLayout(null);
+    	panel_rush_hour.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_rush_hour.setBackground(Color.WHITE);
+    	panel_rush_hour.setBounds(899, 33, 345, 486);
+    	overallPanel.add(panel_rush_hour);
+    	
+    	JPanel panel_hot_trend = new JPanel();
+    	panel_hot_trend.setLayout(null);
+    	panel_hot_trend.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_hot_trend.setBackground(Color.WHITE);
+    	panel_hot_trend.setBounds(36, 221, 823, 298);
+    	overallPanel.add(panel_hot_trend);
+    	
+    	JPanel panel_incomes = new JPanel();
+    	panel_incomes.setLayout(null);
+    	panel_incomes.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_incomes.setBackground(Color.WHITE);
+    	panel_incomes.setBounds(36, 33, 823, 146);
+    	overallPanel.add(panel_incomes);
+    	
+    	
+    	
+        return overallPanel;
     }
     
     private JPanel createMenuPanel() {
@@ -415,10 +453,10 @@ public class ManagementSystem extends JFrame {
     	lbl_switch_grip_for_menu = new RoundedLabel("Chế độ hiển thị lưới");
     	lbl_switch_grip_for_menu.setHorizontalAlignment(SwingConstants.CENTER);
     	lbl_switch_grip_for_menu.setForeground(Color.BLACK);
-    	lbl_switch_grip_for_menu.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_switch_grip_for_menu.setFont(new Font("Arial", Font.PLAIN, 14));
     	lbl_switch_grip_for_menu.setCornerRadius(10);
     	lbl_switch_grip_for_menu.setBackground(new Color(211, 211, 211));
-    	lbl_switch_grip_for_menu.setBounds(1082, 180, 160, 40);
+    	lbl_switch_grip_for_menu.setBounds(1102, 186, 140, 32);
     	menuPanel.add(lbl_switch_grip_for_menu);
     	
     	lbl_switch_grip_for_menu.addMouseListener(new MouseAdapter() {
@@ -457,10 +495,10 @@ public class ManagementSystem extends JFrame {
     	lbl_switch_table_for_menu = new RoundedLabel("Chế độ hiển thị bảng");
     	lbl_switch_table_for_menu.setHorizontalAlignment(SwingConstants.CENTER);
     	lbl_switch_table_for_menu.setForeground(Color.BLACK);
-    	lbl_switch_table_for_menu.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_switch_table_for_menu.setFont(new Font("Arial", Font.PLAIN, 14));
     	lbl_switch_table_for_menu.setCornerRadius(10);
     	lbl_switch_table_for_menu.setBackground(new Color(211, 211, 211));
-    	lbl_switch_table_for_menu.setBounds(1082, 180, 160, 40);
+    	lbl_switch_table_for_menu.setBounds(1102, 186, 140, 32);
     	menuPanel.add(lbl_switch_table_for_menu);
     	
     	lbl_switch_table_for_menu.addMouseListener(new MouseAdapter() {
@@ -498,159 +536,224 @@ public class ManagementSystem extends JFrame {
     	
     	JPanel panel_filter = new JPanel();
     	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-    	panel_filter.setBounds(38, 34, 149, 488);
+    	panel_filter.setBounds(38, 36, 149, 486);
     	panel_filter.setBackground(Color.WHITE);
     	menuPanel.add(panel_filter);
+    	panel_filter.setLayout(null);
+    	
+    	JCheckBox sortCheckBox = new JCheckBox("Sắp xếp A -> Z");
+    	sortCheckBox.setFont(new Font("Arial", Font.PLAIN, 14));
+    	sortCheckBox.setBackground(new Color(255, 255, 255));
+    	sortCheckBox.setBounds(6, 40, 137, 23);
+    	panel_filter.add(sortCheckBox);
+    	
+    	sortCheckBox.addItemListener(new ItemListener() {
+    	    @Override
+    	    public void itemStateChanged(ItemEvent e) {
+    	        boolean isChecked = e.getStateChange() == ItemEvent.SELECTED;
+    	        updateTable(DishDAO.handleSort(isChecked));
+    	        System.out.println("Danh sách bị thay đổi");
+    	    }
+    	});
     	
     	JPanel panel_setting = new JPanel();
-    	panel_setting.setBounds(233, 34, 1009, 143);
+    	panel_setting.setBounds(233, 34, 745, 143);
     	panel_setting.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
     	panel_setting.setBackground(Color.white);
     	menuPanel.add(panel_setting);
     	panel_setting.setLayout(null);
     	
     	JLabel lbl_dish_id = new JLabel("Mã Món Ăn");
-    	lbl_dish_id.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_dish_id.setBounds(39, 31, 121, 33);
+    	lbl_dish_id.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_id.setBounds(30, 11, 140, 33);
     	panel_setting.add(lbl_dish_id);
     	
     	tf_dish_id = new JTextField();
-    	tf_dish_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_id.setFont(new Font("Arial", Font.PLAIN, 14));
     	tf_dish_id.setColumns(10);
     	tf_dish_id.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_dish_id.setBounds(187, 31, 168, 33);
+    	tf_dish_id.setBounds(180, 11, 140, 33);
     	panel_setting.add(tf_dish_id);
     	
     	tf_dish_name = new JTextField();
-    	tf_dish_name.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_name.setFont(new Font("Arial", Font.PLAIN, 14));
     	tf_dish_name.setColumns(10);
     	tf_dish_name.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_dish_name.setBounds(187, 75, 168, 33);
+    	tf_dish_name.setBounds(180, 55, 140, 33);
     	panel_setting.add(tf_dish_name);
     	
     	JLabel lbl_dish_name = new JLabel("Tên Món Ăn");
-    	lbl_dish_name.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_dish_name.setBounds(39, 75, 121, 33);
+    	lbl_dish_name.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_name.setBounds(30, 55, 140, 33);
     	panel_setting.add(lbl_dish_name);
     	
     	JLabel lbl_dish_category = new JLabel("Loại Món Ăn");
-    	lbl_dish_category.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_dish_category.setBounds(443, 75, 121, 33);
+    	lbl_dish_category.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_category.setBounds(428, 11, 121, 33);
     	panel_setting.add(lbl_dish_category);
     	
     	JLabel lbl_dish_price = new JLabel("Giá");
-    	lbl_dish_price.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_dish_price.setBounds(443, 31, 121, 33);
+    	lbl_dish_price.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_price.setBounds(30, 99, 140, 33);
     	panel_setting.add(lbl_dish_price);
     	
     	tf_dish_price = new JTextField();
-    	tf_dish_price.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_price.setFont(new Font("Arial", Font.PLAIN, 14));
     	tf_dish_price.setColumns(10);
     	tf_dish_price.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_dish_price.setBounds(590, 31, 168, 33);
+    	tf_dish_price.setBounds(180, 99, 140, 33);
     	panel_setting.add(tf_dish_price);
     	
     	tf_dish_category = new JTextField();
-    	tf_dish_category.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_dish_category.setFont(new Font("Arial", Font.PLAIN, 14));
     	tf_dish_category.setColumns(10);
     	tf_dish_category.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_dish_category.setBounds(590, 75, 168, 33);
+    	tf_dish_category.setBounds(568, 11, 140, 33);
     	panel_setting.add(tf_dish_category);
     	
     	RoundedLabel lbl_add = new RoundedLabel("Thêm Món Ăn");
     	lbl_add.setHorizontalAlignment(SwingConstants.CENTER);
-    	lbl_add.setForeground(Color.WHITE);
+    	lbl_add.setForeground(Color.BLACK);
     	lbl_add.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_add.setCornerRadius(10);
     	lbl_add.setBackground(new Color(129, 199, 132));
-    	lbl_add.setBounds(828, 11, 149, 33);
+    	lbl_add.setBounds(428, 55, 121, 33);
     	panel_setting.add(lbl_add);
     	
     	lbl_add.addMouseListener(new MouseAdapter() {
     		@Override
     		public void mouseEntered(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
     			lbl_add.setBackground(new Color(40, 167, 69));
     		}
     		
     		@Override
     		public void mouseExited(MouseEvent e) {
+    			lbl_add.setForeground(Color.BLACK);
     			lbl_add.setBackground(new Color(129, 199, 132));
     		}
     		
     		@Override
     		public void mousePressed(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
     			lbl_add.setBackground(new Color(33, 136, 56));
     			addDish();
+    			addNewDish();
     		}
     		
     		@Override
     		public void mouseReleased(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
     			lbl_add.setBackground(new Color(40, 167, 69));
     		}
 		});
     	
     	RoundedLabel lbl_adjust = new RoundedLabel("Điều Chỉnh");
     	lbl_adjust.setHorizontalAlignment(SwingConstants.CENTER);
-    	lbl_adjust.setForeground(Color.WHITE);
+    	lbl_adjust.setForeground(Color.BLACK);
     	lbl_adjust.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_adjust.setCornerRadius(10);
     	lbl_adjust.setBackground(new Color(100, 181, 246));
-    	lbl_adjust.setBounds(828, 55, 149, 33);
+    	lbl_adjust.setBounds(568, 55, 140, 33);
     	panel_setting.add(lbl_adjust);
     	
     	lbl_adjust.addMouseListener(new MouseAdapter() {
     		@Override
     		public void mouseEntered(MouseEvent e) {
+    	    	lbl_adjust.setForeground(Color.WHITE);
     			lbl_adjust.setBackground(new Color(0, 123, 255));
     		}
     		
     		@Override
     		public void mouseExited(MouseEvent e) {
+    			lbl_adjust.setForeground(Color.BLACK);
     			lbl_adjust.setBackground(new Color(100, 181, 246));
     		}
     		
     		@Override
     		public void mousePressed(MouseEvent e) {
+    	    	lbl_adjust.setForeground(Color.WHITE);
     			lbl_adjust.setBackground(new Color(0, 86, 179));
     			editDish();
     		}
     		
     		@Override
     		public void mouseReleased(MouseEvent e) {
+    	    	lbl_adjust.setForeground(Color.WHITE);
     			lbl_adjust.setBackground(new Color(0, 123, 255));
     		}
 		});
     	
     	RoundedLabel lbl_remove = new RoundedLabel("Xóa");
     	lbl_remove.setHorizontalAlignment(SwingConstants.CENTER);
-    	lbl_remove.setForeground(Color.WHITE);
+    	lbl_remove.setForeground(Color.BLACK);
     	lbl_remove.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_remove.setCornerRadius(10);
     	lbl_remove.setBackground(new Color(229, 115, 115));
-    	lbl_remove.setBounds(828, 99, 149, 33);
+    	lbl_remove.setBounds(428, 99, 121, 33);
     	panel_setting.add(lbl_remove);
     	
     	lbl_remove.addMouseListener(new MouseAdapter() {
     		@Override
     		public void mouseEntered(MouseEvent e) {
+    			lbl_remove.setForeground(Color.WHITE);
     			lbl_remove.setBackground(new Color(220, 53, 69));
     		}
     		
     		@Override
     		public void mouseExited(MouseEvent e) {
+    			lbl_remove.setForeground(Color.BLACK);
     			lbl_remove.setBackground(new Color(229, 115, 115));
     		}
     		
     		@Override
     		public void mousePressed(MouseEvent e) {
+    			lbl_remove.setForeground(Color.WHITE);
     			lbl_remove.setBackground(new Color(176, 42, 55));
     			deleteDish();
     		}
     		
     		@Override
     	    public void mouseReleased(MouseEvent e) {
+    			lbl_remove.setForeground(Color.WHITE);
     			lbl_remove.setBackground(new Color(220, 53, 69));
     	    }
+		});
+    	
+    	RoundedLabel lbl_add_image = new RoundedLabel("Thêm Ảnh");
+    	lbl_add_image.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_add_image.setForeground(Color.BLACK);
+    	lbl_add_image.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_add_image.setCornerRadius(10);
+    	lbl_add_image.setBackground(new Color(255, 253, 182));
+    	lbl_add_image.setBounds(568, 99, 140, 33);
+    	panel_setting.add(lbl_add_image);
+    	
+    	lbl_add_image.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_add_image.setForeground(Color.WHITE);
+    			lbl_add_image.setBackground(new Color(255, 193, 7));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_add_image.setForeground(Color.BLACK);
+    			lbl_add_image.setBackground(new Color(255, 253, 182));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_add_image.setForeground(Color.WHITE);
+    			lbl_add_image.setBackground(new Color(140, 120, 80));
+    			addImage();
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_add_image.setForeground(Color.WHITE);
+    			lbl_add_image.setBackground(new Color(255, 193, 7));
+    		}
 		});
     	
     	switch_CardLayout_for_menu = new CardLayout();
@@ -662,6 +765,14 @@ public class ManagementSystem extends JFrame {
         
         menuPanel.add(panel_contain_switch_CardLayout_for_menu);
     	menuPanel.setLayout(null);
+    	
+    	dishImage = new JLabel("Ảnh Trống");
+    	dishImage.setBounds(1033, 33, 209, 143);
+    	menuPanel.add(dishImage);
+    	dishImage.setHorizontalAlignment(SwingConstants.CENTER);
+    	dishImage.setForeground(Color.BLACK);
+    	dishImage.setFont(new Font("Arial", Font.PLAIN, 16));
+    	dishImage.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
     	
     	menuPanel.revalidate();
     	menuPanel.repaint();
@@ -684,7 +795,7 @@ private JScrollPane switchTableModeForMenu() {
 				new Object[][] {
 				},
 				new String[] {
-					"Mã Món Ăn", "Tên Món Ăn", "Giá", "Loại Món Ăn"
+					"Mã Món Ăn", "Tên Món Ăn", "Giá (Nghìn VNĐ)", "Loại Món Ăn"
 				}
 			);
 		
@@ -692,9 +803,9 @@ private JScrollPane switchTableModeForMenu() {
 		DishTable.setModel(Dish_table_model);
 		DishTable.getTableHeader().setReorderingAllowed(false);
 		DishTable.setFont(new Font("Arial", Font.PLAIN, 20));
-		DishTable.getColumnModel().getColumn(0).setPreferredWidth(150);
-		DishTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-		DishTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+		DishTable.getColumnModel().getColumn(0).setPreferredWidth(50);
+		DishTable.getColumnModel().getColumn(1).setPreferredWidth(320);
+		DishTable.getColumnModel().getColumn(2).setPreferredWidth(150);
 		DishTable.getColumnModel().getColumn(3).setPreferredWidth(150);
 		Font headerFont = new Font("Arial", Font.BOLD, 18);
 		DishTable.getTableHeader().setPreferredSize(new Dimension(DishTable.getTableHeader().getWidth(), 30));
@@ -707,12 +818,33 @@ private JScrollPane switchTableModeForMenu() {
                 if (!e.getValueIsAdjusting()) {
                     int selectedRow = DishTable.getSelectedRow();
                     if (selectedRow != -1) {
+                    	DishSelected = DishTable.getValueAt(selectedRow, 0).toString();
+                    	
                         tf_dish_id.setText(DishTable.getValueAt(selectedRow, 0).toString());
                         tf_dish_name.setText(DishTable.getValueAt(selectedRow, 1).toString());
                         tf_dish_price.setText(DishTable.getValueAt(selectedRow, 2).toString());
                         tf_dish_category.setText(DishTable.getValueAt(selectedRow, 3).toString());
                         
-                        DishSelected = DishTable.getValueAt(selectedRow, 0).toString();
+                        String imagePath = DishDAO.getDishImage(DishSelected);  // Lấy đường dẫn ảnh từ CSDL
+
+                        if (imagePath == null || imagePath.isEmpty()) {
+                            dishImage.setText("Chưa cập nhật ảnh");
+                            dishImage.setIcon(null);
+                        } else {
+                            // Lấy đường dẫn thư mục gốc của dự án
+                            String basePath = System.getProperty("user.dir");
+                            
+                            // Kết hợp thư mục gốc với đường dẫn tương đối từ cơ sở dữ liệu
+                            File imageFile = new File(basePath, imagePath);
+
+                            if (imageFile.exists()) {
+                                dishImage.setText("");
+                                ImageIcon imageIcon = new ImageIcon(imageFile.getAbsolutePath());
+                                dishImage.setIcon(imageIcon);
+                            } else {
+                                dishImage.setText("Ảnh không tồn tại");
+                            }
+                        }
                     }
                 }
             }
@@ -724,6 +856,21 @@ private JScrollPane switchTableModeForMenu() {
 		return table_mode_show_table_for_menu;
     }
     
+	public void updateTable(List<Dish> dishes) {
+		// Xóa tất cả dữ liệu hiện tại trong bảng
+		Dish_table_model.setRowCount(0);
+
+		// Thêm dữ liệu mới vào bảng
+		for (Dish dish : dishes) {
+			Dish_table_model.addRow(
+					new Object[] { dish.getDishID(), dish.getDishName(), dish.getDishPrice(), dish.getDishCategory() });
+		}
+
+		// Thông báo thay đổi dữ liệu
+		Dish_table_model.fireTableDataChanged();
+	}
+
+
     private JPanel switchGripModeForMenu() {
     	
     	// Chế độ lưới (Switch Mode)
@@ -738,7 +885,8 @@ private JScrollPane switchTableModeForMenu() {
         menu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
         menu.setBounds(0, 0, 1202, 296);
         menu.setLayout(new GridLayout(0, 5, 10, 10));
-    	
+        menu.setPreferredSize(new Dimension(500, 500));
+        
         loadMenu();
         
     	JScrollPane scrollPane = new JScrollPane(menu);
@@ -750,33 +898,45 @@ private JScrollPane switchTableModeForMenu() {
     
     private void loadMenu() {
         for (int i = 1; i <= dishCount; i++) {
-        	addDishToMenu("Món " + i);
+        	Dish dishes = DishDAO.accessDish(i - 1);
+        	addDishToMenu("Món " + i, dishes);
         }
     }
     
     private void addNewDish() {
         dishCount++;
-        addDishToMenu("Món " + dishCount);
+        Dish dishes = DishDAO.accessDish(dishCount - 1);
+        addDishToMenu("Món " + dishCount, dishes);
         menu.revalidate(); // Làm mới giao diện
         menu.repaint();
     }
     
-    private void addDishToMenu(String dish) {
-    	JPanel JPmenu = new JPanel();
-    	JPmenu.setBackground(Color.WHITE);
-    	JPmenu.setPreferredSize(new Dimension(100, 100));
-    	JPmenu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-        JLabel lbl_dish = new JLabel("<html>" + dish + "<br>");
-        JPmenu.add(lbl_dish);
+    private void addDishToMenu(String dish, Dish dishes) {
+    	String tmp = DishDAO.getDishImage(dishes.getDishID());
+    	
+    	JPanel JPdish = new JPanel();
+    	JPdish.setBackground(Color.WHITE);
+    	JPdish.setPreferredSize(new Dimension(100, 100));
+    	JPdish.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	
+    	JLabel lbl_dish = new JLabel();
+    	if (tmp != null) {
+    		ImageIcon imageIcon = new ImageIcon(tmp);
+            lbl_dish.setIcon(imageIcon);
+    	} else {
+    		lbl_dish.setText("<html>" + dish + "<br>");
+    	}
+        
+        JPdish.add(lbl_dish);
         
         // Sự kiện khi nhấn
-        JPmenu.addMouseListener(new MouseAdapter() {
+        JPdish.addMouseListener(new MouseAdapter() {
         	@Override
         	public void mouseClicked(MouseEvent e) {
         		JOptionPane.showMessageDialog(null, "Bạn đã chọn " + dish);
         	}
 		});
-        menu.add(JPmenu);
+        menu.add(JPdish);
     }
     
     public void loadDish() {
@@ -787,15 +947,12 @@ private JScrollPane switchTableModeForMenu() {
 		}
     }
     
-    public void sortByName() {
-    	ArrayList<Dish> ls = new ArrayList<>(DishDAO.map.values());
-    }
-    
     public void addDish() {
         JTextField tfDishID = new JTextField();
         JTextField tfDishName = new JTextField();
         JTextField tfPrice = new JTextField();
         JTextField tfCategory = new JTextField();
+        JLabel lblImagePath = new JLabel("Chưa chọn hình ảnh");
         
         JPanel panel = new JPanel(new GridLayout(6, 2));
         panel.add(new JLabel("Mã Món Ăn:"));
@@ -806,6 +963,8 @@ private JScrollPane switchTableModeForMenu() {
         panel.add(tfPrice);
         panel.add(new JLabel("Loại Món Ăn:"));
         panel.add(tfCategory);
+        panel.add(new JLabel("Chọn Hình Ảnh:"));
+        panel.add(lblImagePath);
 
         int result = JOptionPane.showConfirmDialog(null, panel, "Thêm món mới", JOptionPane.OK_CANCEL_OPTION);
 
@@ -819,12 +978,21 @@ private JScrollPane switchTableModeForMenu() {
 
             // Lấy thông tin, nếu trống thì chuyển thành "null"
             String dishName = tfDishName.getText().trim().isEmpty() ? null : tfDishName.getText().trim();
-            String price = tfPrice.getText().trim().isEmpty() ? null : tfPrice.getText().trim();
-            Double category = tfCategory.getText().trim().isEmpty() ? null : Double.valueOf(tfCategory.getText().trim());
+            Double price = tfPrice.getText().trim().isEmpty() ? null : Double.valueOf(tfPrice.getText().trim());
+            String category = tfCategory.getText().trim().isEmpty() ? null : tfCategory.getText().trim();
+            
+            // Sử dụng phương thức chooseAndCopyImage để chọn và sao chép hình ảnh
+            String relativeImagePath = null;
+            relativeImagePath = chooseAndCopyImage();
+
+            if (relativeImagePath == null) {
+                JOptionPane.showMessageDialog(null, "Bạn chưa chọn hình ảnh!");
+            }
             
             try {
-                Dish dish = new Dish(dishID, dishName, price, category);
+                Dish dish = new Dish(dishID, dishName, price, category, relativeImagePath);
                 DishDAO.addDish(dish);
+                DishDAO.updateDishImage(relativeImagePath, dishID);
                 Object[] newRow = {dish.getDishID(), dish.getDishName(), dish.getDishPrice(), dish.getDishCategory()};
                 Dish_table_model.addRow(newRow);
             } catch (Exception e) {
@@ -836,25 +1004,29 @@ private JScrollPane switchTableModeForMenu() {
     public void editDish() {
         int selectedRow = DishTable.getSelectedRow();
         if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(null, "Vui lòng chọn một hàng hóa để sửa!");
+            JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để sửa!");
             return;
         }
 
         // Lấy thông tin hiện tại từ hàng được chọn
         String currentDishID = Dish_table_model.getValueAt(selectedRow, 0).toString();
         String currentDishName = Dish_table_model.getValueAt(selectedRow, 1) != null ? Dish_table_model.getValueAt(selectedRow, 1).toString() : "";
-        String currentPrice = Dish_table_model.getValueAt(selectedRow, 2) != null ? Dish_table_model.getValueAt(selectedRow, 2).toString() : "";
-        Double currentCategory = Dish_table_model.getValueAt(selectedRow, 3) != null ? Double.valueOf(Dish_table_model.getValueAt(selectedRow, 3).toString()) : null;
+        Double currentPrice = Dish_table_model.getValueAt(selectedRow, 2) != null ? Double.valueOf(Dish_table_model.getValueAt(selectedRow, 2).toString()) : null;
+        String currentCategory = Dish_table_model.getValueAt(selectedRow, 3) != null ? Dish_table_model.getValueAt(selectedRow, 3).toString() : "";
+        
+        // Lấy thông tin hình ảnh từ CSDL (hoặc giả định là giá trị mặc định)
+        String currentImage = DishDAO.getDishImage(currentDishID); // Lấy từ cơ sở dữ liệu
         
         // Tạo đối tượng hàng hóa hiện tại
-        Dish currentDish = new Dish(currentDishID, currentDishName, currentPrice, currentCategory);
+        Dish currentDish = new Dish(currentDishID, currentDishName, currentPrice, currentCategory, currentImage);
         
         // Tạo các trường nhập liệu
         JTextField tfDishID = new JTextField(currentDishID);
         tfDishID.setEditable(false);
         JTextField tfDishName = new JTextField(currentDishName);
-        JTextField tfPrice = new JTextField(currentPrice);
-        JTextField tfCategory = new JTextField(currentCategory.toString());
+        JTextField tfPrice = new JTextField(currentPrice.toString());
+        JTextField tfCategory = new JTextField(currentCategory);
+        JLabel lblImagePath = new JLabel((currentImage != null && !currentImage.isEmpty()) ? currentImage : "Chưa chọn hình ảnh");
         
         // Tạo bảng nhập liệu
         JPanel panel = new JPanel(new GridLayout(6, 2));
@@ -866,6 +1038,8 @@ private JScrollPane switchTableModeForMenu() {
         panel.add(tfPrice);
         panel.add(new JLabel("Loại Món Ăn:"));
         panel.add(tfCategory);
+        panel.add(new JLabel("Hình Ảnh:"));
+        panel.add(lblImagePath);	
 
         int result = JOptionPane.showConfirmDialog(null, panel, "Sửa thông tin món ăn", JOptionPane.OK_CANCEL_OPTION);
 
@@ -879,20 +1053,23 @@ private JScrollPane switchTableModeForMenu() {
 
             // Lấy thông tin, nếu trống thì chuyển thành "null"
             String name = tfDishName.getText().trim().isEmpty() ? null : tfDishName.getText().trim();
-            String price = tfPrice.getText().trim().isEmpty() ? null : tfPrice.getText().trim();
-            Double category = tfCategory.getText().trim().isEmpty() ? null : Double.valueOf(tfCategory.getText().trim());
+            Double price = tfPrice.getText().trim().isEmpty() ? null : Double.valueOf(tfPrice.getText().trim());
+            String category = tfCategory.getText().trim().isEmpty() ? null : tfCategory.getText().trim();
 
-            try {
-                Dish newDish = new Dish(dishID, name, price, category);
-                DishDAO.updateDish(currentDish, newDish);
-                Dish_table_model.setValueAt(newDish.getDishName(), selectedRow, 1);
-                Dish_table_model.setValueAt(newDish.getDishPrice(), selectedRow, 2);
-                Dish_table_model.setValueAt(newDish.getDishCategory(), selectedRow, 3);
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
-            }
-        }
-    }
+            String image = currentDish.getDishImage();
+			try {
+				Dish newDish = new Dish(dishID, name, price, category, image);
+				DishDAO.updateDish(currentDish, newDish);
+				DishDAO.updateDishImage(image, dishID);
+
+				Dish_table_model.setValueAt(newDish.getDishName(), selectedRow, 1);
+				Dish_table_model.setValueAt(newDish.getDishPrice(), selectedRow, 2);
+				Dish_table_model.setValueAt(newDish.getDishCategory(), selectedRow, 3);
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
+			}
+		}
+	}
 
     public void deleteDish() {
         int selectedRow = DishTable.getSelectedRow();
@@ -913,6 +1090,81 @@ private JScrollPane switchTableModeForMenu() {
         } else {
             JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
         }
+    }
+    
+    public void addImage() {
+        int selectedRow = DishTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để thêm ảnh!");
+            return;
+        }
+
+        // Lấy thông tin hiện tại từ hàng được chọn
+        String currentDishID = Dish_table_model.getValueAt(selectedRow, 0).toString();
+        String currentDishName = Dish_table_model.getValueAt(selectedRow, 1) != null ? Dish_table_model.getValueAt(selectedRow, 1).toString() : "";
+        Double currentPrice = Dish_table_model.getValueAt(selectedRow, 2) != null ? Double.valueOf(Dish_table_model.getValueAt(selectedRow, 2).toString()) : null;
+        String currentCategory = Dish_table_model.getValueAt(selectedRow, 3) != null ? Dish_table_model.getValueAt(selectedRow, 3).toString() : "";
+
+        // Lấy thông tin hình ảnh từ CSDL
+        String currentImage = DishDAO.getDishImage(currentDishID);
+
+        // Tạo đối tượng Dish
+        Dish currentDish = new Dish(currentDishID, currentDishName, currentPrice, currentCategory, currentImage);
+
+        // Chọn và sao chép hình ảnh
+        String newImage = chooseAndCopyImage();
+        if (newImage == null || newImage.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Không có hình ảnh nào được chọn!");
+            return;
+        }
+
+        // Nếu người dùng không chọn ảnh mới, giữ nguyên ảnh cũ
+        if (newImage.equals(currentDish.getDishImage())) {
+            JOptionPane.showMessageDialog(null, "Hình ảnh không thay đổi.");
+            return;
+        }
+
+        try {
+            // Cập nhật hình ảnh mới vào cơ sở dữ liệu
+            DishDAO.updateDishImage(newImage, currentDishID);
+
+            // Hiển thị thông báo thành công
+            JOptionPane.showMessageDialog(null, "Hình ảnh đã được cập nhật thành công cho món: " + currentDishName);
+        } catch (Exception e) {
+            // Hiển thị thông báo lỗi
+            JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
+        }
+    }
+    
+    // Phương thức chooseAndCopyImage để chọn hình ảnh và sao chép vào thư mục image
+    private String chooseAndCopyImage() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Hình ảnh (JPG, PNG)", "jpg", "png"));
+        int returnValue = fileChooser.showOpenDialog(null);
+
+        if (returnValue == JFileChooser.APPROVE_OPTION) {
+            try {
+                File selectedFile = fileChooser.getSelectedFile();
+
+                // Sao chép hình ảnh vào package 'image'
+                File destDir = new File("src/image"); // Đường dẫn tới package 'image'
+                if (!destDir.exists()) {
+                    destDir.mkdirs(); // Tạo thư mục nếu chưa tồn tại
+                }
+
+                File destFile = new File(destDir, selectedFile.getName());
+
+                // Ghi đè file nếu nó đã tồn tại
+                Files.copy(selectedFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                // Trả về đường dẫn tương đối
+                return "src/image/" + selectedFile.getName();
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Đã xảy ra lỗi khi sao chép hình ảnh: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        return null; // Trả về null nếu người dùng không chọn hình ảnh
     }
     
     private JPanel createFloorPanel() {

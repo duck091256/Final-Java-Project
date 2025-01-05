@@ -3,15 +3,30 @@ package model;
 public class Dish {
 	private String dishID;
 	private String dishName;
-	private String dishCategory;
 	private double dishPrice;
+	private String dishCategory;
+	private String dishImage;
 	
-	public Dish(String dishID, String dishName, String dishCategory, double dishPrice) {
+	public Dish(String dishID, String dishName, double dishPrice, String dishCategory, String dishImage) {
 		super();
 		this.dishID = dishID;
 		this.dishName = dishName;
 		this.dishCategory = dishCategory;
 		this.dishPrice = dishPrice;
+		this.dishImage = dishImage;
+	}
+	
+	@Override
+    public Dish clone() {
+        return new Dish(this.dishID, this.dishName, this.dishPrice, this.dishCategory, this.dishImage);
+    }
+
+	public String getDishImage() {
+		return dishImage;
+	}
+
+	public void setDishImage(String dishImage) {
+		this.dishImage = dishImage;
 	}
 
 	public String getDishID() {

@@ -9,7 +9,6 @@ import java.util.HashMap;
 public class Ordering {
     public static HashMap<String, ArrayList<Dish>> orderList = new HashMap<>();
 
-
     /**
      * Gọi thêm món vào danh sách các món hiện tại của bàn hiện tại
      *
@@ -25,5 +24,4 @@ public class Ordering {
         orderList.put(table.getTableID(), list);
         return true;
     }
-
 }

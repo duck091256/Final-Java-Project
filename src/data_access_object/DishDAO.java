@@ -121,24 +121,16 @@ public class DishDAO {
 	}
 
 	public static boolean updateDish(Dish dish, Dish newDish) {
-		
-		/* Nếu không cập nhật ID của Staff **/
-		if (newDish.getDishID().equals(dish.getDishID())) {
-			DishDAO.map.put(dish.getDishID(), newDish);
-			JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-			return true;
-		}
-		/* Nếu cập nhật ID của Staff */
-		// Nếu ID mới đã tồn tại
-		if (DishDAO.map.containsKey(newDish.getDishID())) {
-			JOptionPane.showMessageDialog(null, "Cập nhật món ăn thất bại XXX", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-			return false;
+		for (int i = 0; i < list.size(); i++) {
+			if (list.get(i).getDishID().equals(dish.getDishID())) {
+				list.set(i, newDish);
+				JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+				return true;
+			}
 		}
 
-		// Nếu ID mới chưa tồn tại
-		DishDAO.map.remove(dish.getDishID());
-		DishDAO.map.put(newDish.getDishID(), newDish);
-		return true;
+		JOptionPane.showMessageDialog(null, "Cập nhật món ăn thất bại XXX", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+		return false;
 	}
 
 	public static boolean deleteDish(String id) {

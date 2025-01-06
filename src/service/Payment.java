@@ -64,7 +64,9 @@ public class Payment {
             }
         }
 
-        totalPrice += list.get(list.size() - 1).getDishPrice();
+        Dish lastDish = list.get(list.size() - 1);
+        totalPrice += lastDish.getDishPrice();
+        sub += lastDish.getQuantity();
         detailBill.add(new DetailReceipt(list.get(list.size() - 1).getDishID(), billID, sub));
         table.setAvailable(true);
         orderList.remove(table.getTableID());

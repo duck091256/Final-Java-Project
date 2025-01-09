@@ -105,68 +105,96 @@ public class DishDAO {
 
 	public static boolean addDish(Dish dish) {
 		
-		if (DishDAO.map.containsKey(dish.getDishID())) {
-	        JOptionPane.showMessageDialog(null, "Thêm món ăn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
+		if (getDish(dish.getDishID()) != null) {
+			JOptionPane.showMessageDialog(null, "Thêm món thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
-
+		
 		DishDAO.list.add(dish);
 		DishDAO.map.put(dish.getDishID(), dish);
-        JOptionPane.showMessageDialog(null, "Đã thêm món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+		DishDAO.originalList.add(dish);
+        JOptionPane.showMessageDialog(null, "Đã món mới thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 		return true;
 	}
 
 	public static Dish getDish(String dishID) {
-		return DishDAO.map.getOrDefault(dishID, null);
+		Optional<Dish> result = list.stream().filter(new Predicate<Dish>() {
+			@Override
+			public boolean test(Dish dish) {
+				return dish.getDishID().equals(dishID);
+			}
+		}).findFirst();
+
+		return result.orElse(null);
 	}
 
 	public static boolean updateDish(Dish dish, Dish newDish) {
-		for (int i = 0; i < list.size(); i++) {
-			if (list.get(i).getDishID().equals(dish.getDishID())) {
-				list.set(i, newDish);
-				JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-				return true;
-			}
-		}
+	    // Tìm món ăn hiện tại trong danh sách
+	    for (int i = 0; i < DishDAO.list.size(); i++) {
+	        if (DishDAO.list.get(i).getDishID().equals(dish.getDishID())) {
+	            // Nếu không cập nhật ID của Dish
+	            if (newDish.getDishID().equals(dish.getDishID())) {
+	                DishDAO.list.set(i, newDish);
 
-		JOptionPane.showMessageDialog(null, "Cập nhật món ăn thất bại XXX", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-		return false;
+	                // Đồng bộ với originalList
+	                for (int j = 0; j < DishDAO.originalList.size(); j++) {
+	                    if (DishDAO.originalList.get(j).getDishID().equals(dish.getDishID())) {
+	                        DishDAO.originalList.set(j, newDish);
+	                        break;
+	                    }
+	                }
+
+	                JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+	                return true;
+	            }
+
+	            // Nếu cập nhật ID của Dish
+	            // Kiểm tra ID mới đã tồn tại hay chưa
+	            for (Dish d : DishDAO.list) {
+	                if (d.getDishID().equals(newDish.getDishID())) {
+	                    JOptionPane.showMessageDialog(null, "Cập nhật món ăn thất bại, ID đã tồn tại!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+	                    return false;
+	                }
+	            }
+
+	            // Nếu ID mới chưa tồn tại
+	            DishDAO.list.remove(i);
+	            DishDAO.list.add(newDish);
+
+	            // Đồng bộ với originalList
+	            for (int j = 0; j < DishDAO.originalList.size(); j++) {
+	                if (DishDAO.originalList.get(j).getDishID().equals(dish.getDishID())) {
+	                    DishDAO.originalList.remove(j);
+	                    DishDAO.originalList.add(newDish);
+	                    break;
+	                }
+	            }
+
+	            JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+	            return true;
+	        }
+	    }
+
+	    // Nếu không tìm thấy món ăn cần cập nhật
+	    JOptionPane.showMessageDialog(null, "Không tìm thấy món ăn cần cập nhật!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+	    return false;
 	}
 
 	public static boolean deleteDish(String id) {
-		if (!DishDAO.map.containsKey(id)) {
-			JOptionPane.showMessageDialog(null, "Xóa món ăn thất bại XXX", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-			return false;
-		}
-
-		Dish dish = DishDAO.map.get(id);
-		DishDAO.map.remove(id);
-		list.remove(dish);
-		JOptionPane.showMessageDialog(null, "Xóa món ăn thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-		return true;
-	}
-	
-	public static void updateDishImage(String relativeImagePath, String dishID) {
-		Connection con = JDBCUtil.getConnection();
-		String query = "UPDATE dish "
-				+ "SET dishImage = ? "
-				+ "WHERE dishID =  ?;";
-		try {
-	        PreparedStatement pstmt = con.prepareStatement(query);
-	        pstmt.setString(1, relativeImagePath);
-	        pstmt.setString(2, dishID);
-	        int rowsAffected = pstmt.executeUpdate();
-
-	        if (rowsAffected > 0) {
-	            System.out.println("Dish image updated successfully.");
-	        } else {
-	            System.out.println("No dish found with the specified ID.");
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    } finally {
-	        JDBCUtil.closeConnection(con);
+	    // Lưu lại kích thước ban đầu của cả list và originalList
+	    int initialSizeList = list.size();
+	    int initialSizeOriginalList = originalList.size();
+	    
+	    // Xóa món ăn khỏi list
+	    boolean isDeletedFromList = list.removeIf(dish -> dish.getDishID().equals(id));
+	    
+	    // Nếu món ăn đã bị xóa trong list, xóa nó khỏi originalList
+	    if (isDeletedFromList) {
+	        originalList.removeIf(dish -> dish.getDishID().equals(id));
 	    }
+	    
+	    // Kiểm tra xem list và originalList đã thay đổi chưa
+	    return initialSizeList != list.size() && initialSizeOriginalList != originalList.size();
 	}
 	
 	public static String getDishImage(String dishID) {

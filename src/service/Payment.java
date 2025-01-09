@@ -13,6 +13,7 @@ import java.util.Comparator;
 
 import static data_access_object.BillDAO.storeBill;
 import static data_access_object.DetailReceiptDAO.storeDetailReceipt;
+import static data_access_object.RankingStaffDAO.updateRankings;
 import static data_access_object.SessionDAO.storeSession;
 import static service.Ordering.orderList;
 
@@ -83,6 +84,9 @@ public class Payment {
 
             // Stored detail receipt
             storeDetailReceipt(conn, detailBill);
+
+            // Stored ranking staff
+            updateRankings(table.getResponsibleBy(), (int) totalPrice / 10);
 
         } catch (Exception e) {
             e.printStackTrace();

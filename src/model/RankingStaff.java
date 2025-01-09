@@ -5,6 +5,11 @@ public class RankingStaff {
     private int rating;
     private int ranking;
 
+    public RankingStaff(String staffID, int rating) {
+        this.staffID = staffID;
+        this.rating = rating;
+    }
+
     public RankingStaff(String staffID, int rating, int ranking) {
         this.staffID = staffID;
         this.rating = rating;

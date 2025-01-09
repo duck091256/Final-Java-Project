@@ -47,6 +47,7 @@ public class DishDAO {
                         rs.getString("dishCategory"),
                         rs.getString("dishImage")
                 );
+                map.put(dish.getDishID(), dish);
                 list.add(dish);
                 
                 CloneData();
@@ -112,6 +113,7 @@ public class DishDAO {
 		}
 		
 		DishDAO.list.add(dish);
+		DishDAO.map.put(dish.getDishID(), dish);
 		DishDAO.originalList.add(dish);
         JOptionPane.showMessageDialog(null, "Đã món mới thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 		return true;
@@ -196,7 +198,6 @@ public class DishDAO {
 	    // Kiểm tra xem list và originalList đã thay đổi chưa
 	    return initialSizeList != list.size() && initialSizeOriginalList != originalList.size();
 	}
-
 	
 	public static String getDishImage(String dishID) {
 	    String imagePath = null;

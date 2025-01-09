@@ -3,8 +3,10 @@ package data_access_object;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -196,5 +198,34 @@ public class TableDAO {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static Map<Integer, Integer> numOfTableByFloor() {
+	    Map<Integer, Integer> tableCountByFloor = new HashMap<>();
+	    try {
+	        // Kết nối cơ sở dữ liệu
+	        Connection conn = JDBCUtil.getConnection();
+
+	        // Câu lệnh SQL với GROUP BY
+	        String query = "SELECT floorStay, COUNT(*) AS number_of_table FROM dining_table GROUP BY floorStay";
+
+	        // Thực thi câu lệnh
+	        Statement stmt = conn.createStatement();
+	        ResultSet rs = stmt.executeQuery(query);
+
+	        // Đọc kết quả
+	        while (rs.next()) {
+	            int floorStay = rs.getInt("floorStay");
+	            int numberOfTable = rs.getInt("number_of_table");
+	            tableCountByFloor.put(floorStay, numberOfTable);
+	        }
+
+	        // Đóng kết nối
+	        conn.close();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    return tableCountByFloor;
 	}
 }

@@ -19,6 +19,11 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.category.DefaultCategoryDataset;
+
 import data_access_object.DishDAO;
 import data_access_object.EmployeeDAO;
 import data_access_object.TableDAO;
@@ -28,6 +33,7 @@ import fx.RoundedLabelEffect;
 import model.Dish;
 import model.Employee;
 import model.Table;
+import service.RatingCalculation;
 
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -37,8 +43,11 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 
 import javax.swing.JLabel;
@@ -50,9 +59,11 @@ import java.awt.MediaTracker;
 
 import javax.swing.border.*;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import javax.swing.JCheckBox;
 
@@ -60,7 +71,8 @@ public class ManagementSystem extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JLabel dishImage;
-    private int tableCountFloor1 = 12, tableCountFloor2 = 15, dishCount = DishDAO.countRows();
+    private Map<Integer, Integer> tableCount = TableDAO.numOfTableByFloor();
+    private int tableCountFloor1 = tableCount.getOrDefault(1, 0), tableCountFloor2 = tableCount.getOrDefault(2, 0), dishCount = DishDAO.countRows();
     private JPanel contentPane;
     private JPanel grip_mode_show_table_floor1, grip_mode_show_table_floor2, grip_mode_show_menu;
     private RoundedLabelEffect lbl_switch_table_floor1, lbl_switch_table_floor2;
@@ -440,9 +452,53 @@ public class ManagementSystem extends JFrame {
     	panel_incomes.setBounds(36, 33, 823, 146);
     	overallPanel.add(panel_incomes);
     	
-    	
+    	DefaultCategoryDataset dataset = createDataset();
+
+    	// Tạo biểu đồ
+    	JFreeChart barChart = ChartFactory.createBarChart(
+    	        "Món ăn bán chạy",  
+    	        "Tên món ăn",        
+    	        "Số lượng bán",     
+    	        dataset             
+    	);
+
+    	ChartPanel chartPanel = new ChartPanel(barChart);
+
+    	// Giảm kích thước chartPanel một chút so với panel_hot_trend
+    	int padding = 20; // Khoảng cách giảm (10px từ mỗi cạnh)
+    	chartPanel.setPreferredSize(new Dimension(
+    	        panel_hot_trend.getWidth() - padding,
+    	        panel_hot_trend.getHeight() - padding
+    	));
+    	chartPanel.setBounds(
+    	        padding / 2, // Căn giữa chartPanel trong panel_hot_trend
+    	        padding / 2,
+    	        panel_hot_trend.getWidth() - padding,
+    	        panel_hot_trend.getHeight() - padding
+    	);
+
+    	// Cập nhật panel_hot_trend
+    	panel_hot_trend.setLayout(null); // Sử dụng layout tự do để điều chỉnh kích thước
+    	panel_hot_trend.add(chartPanel);
+    	panel_hot_trend.revalidate();
+    	panel_hot_trend.repaint();
     	
         return overallPanel;
+    }
+
+    private static DefaultCategoryDataset createDataset() {
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        ArrayList<Dish> dishList = RatingCalculation.getListOfRatingDish();
+
+        if (dishList != null && !dishList.isEmpty()) {
+            for (Dish dish : dishList) {
+                dataset.addValue(dish.getQuantity(), "Số lượng", dish.getDishName());
+            }
+        } else {
+            dataset.addValue(0, "Số lượng", "Không có dữ liệu");
+        }
+
+        return dataset;
     }
     
     private JPanel createMenuPanel() {
@@ -541,17 +597,17 @@ public class ManagementSystem extends JFrame {
     	menuPanel.add(panel_filter);
     	panel_filter.setLayout(null);
     	
-    	JCheckBox sortCheckBox = new JCheckBox("Sắp xếp A -> Z");
+    	JCheckBox sortCheckBox = new JCheckBox("Sắp xếp theo tên");
     	sortCheckBox.setFont(new Font("Arial", Font.PLAIN, 14));
     	sortCheckBox.setBackground(new Color(255, 255, 255));
-    	sortCheckBox.setBounds(6, 40, 137, 23);
+    	sortCheckBox.setBounds(6, 23, 137, 23);
     	panel_filter.add(sortCheckBox);
     	
     	sortCheckBox.addItemListener(new ItemListener() {
     	    @Override
     	    public void itemStateChanged(ItemEvent e) {
     	        boolean isChecked = e.getStateChange() == ItemEvent.SELECTED;
-    	        updateTable(DishDAO.handleSort(isChecked));
+    	        sortDish(DishDAO.handleSort(isChecked));
     	        System.out.println("Danh sách bị thay đổi");
     	    }
     	});
@@ -710,7 +766,29 @@ public class ManagementSystem extends JFrame {
     		public void mousePressed(MouseEvent e) {
     			lbl_remove.setForeground(Color.WHITE);
     			lbl_remove.setBackground(new Color(176, 42, 55));
-    			deleteDish();
+    			
+    			Dish dish = DishDAO.getDish(DishSelected);
+    			int selectedRow = DishTable.getSelectedRow();
+    	        
+    	        // Kiểm tra dòng được chọn
+    	        if (selectedRow >= 0) {
+    	        	int confirm = JOptionPane.showConfirmDialog(
+    	                    null, 
+    	                    "Bạn có chắc chắn muốn xóa món " + dish.getDishName() + "?", 
+    	                    "Xác nhận xóa",
+    	                    JOptionPane.YES_NO_OPTION
+    	                );
+    	                if (confirm == JOptionPane.YES_OPTION) {
+    	                    removeDish(dish.getDishID());
+    	                    deleteDish();
+    	                }
+    	        } else {
+    	            JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+    	        }
+    	        
+                // Làm mới giao diện
+                menu.revalidate();
+                menu.repaint();	
     		}
     		
     		@Override
@@ -780,25 +858,20 @@ public class ManagementSystem extends JFrame {
     	return menuPanel;
     }
     
-private JScrollPane switchTableModeForMenu() {
-    	
-    	// Chế độ bảng (Switch Mode)
-    	table_mode_show_table_for_menu = new JScrollPane();
-    	table_mode_show_table_for_menu.setBounds(38, 224, 1204, 298);
-    	
-    	Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
-    	table_mode_show_table_for_menu.setBorder(roundedBorder);
-        
-    	DishSelected = null;
-    	
-    	Dish_table_model = new DefaultTableModel(
-				new Object[][] {
-				},
-				new String[] {
-					"Mã Món Ăn", "Tên Món Ăn", "Giá (Nghìn VNĐ)", "Loại Món Ăn"
-				}
-			);
-		
+	private JScrollPane switchTableModeForMenu() {
+
+		// Chế độ bảng (Switch Mode)
+		table_mode_show_table_for_menu = new JScrollPane();
+		table_mode_show_table_for_menu.setBounds(38, 224, 1204, 298);
+
+		Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
+		table_mode_show_table_for_menu.setBorder(roundedBorder);
+
+		DishSelected = null;
+
+		Dish_table_model = new DefaultTableModel(new Object[][] {},
+				new String[] { "Mã Món Ăn", "Tên Món Ăn", "Giá (Nghìn VNĐ)", "Loại Món Ăn" });
+
 		DishTable = new JTable();
 		DishTable.setModel(Dish_table_model);
 		DishTable.getTableHeader().setReorderingAllowed(false);
@@ -811,52 +884,53 @@ private JScrollPane switchTableModeForMenu() {
 		DishTable.getTableHeader().setPreferredSize(new Dimension(DishTable.getTableHeader().getWidth(), 30));
 		DishTable.getTableHeader().setFont(headerFont);
 		DishTable.setRowHeight(30);
-    	
+
 		DishTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) {
-                    int selectedRow = DishTable.getSelectedRow();
-                    if (selectedRow != -1) {
-                    	DishSelected = DishTable.getValueAt(selectedRow, 0).toString();
-                    	
-                        tf_dish_id.setText(DishTable.getValueAt(selectedRow, 0).toString());
-                        tf_dish_name.setText(DishTable.getValueAt(selectedRow, 1).toString());
-                        tf_dish_price.setText(DishTable.getValueAt(selectedRow, 2).toString());
-                        tf_dish_category.setText(DishTable.getValueAt(selectedRow, 3).toString());
-                        
-                        String imagePath = DishDAO.getDishImage(DishSelected);  // Lấy đường dẫn ảnh từ CSDL
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				if (!e.getValueIsAdjusting()) {
+					int selectedRow = DishTable.getSelectedRow();
+					if (selectedRow != -1) {
+						DishSelected = DishTable.getValueAt(selectedRow, 0).toString();
 
-                        if (imagePath == null || imagePath.isEmpty()) {
-                            dishImage.setText("Chưa cập nhật ảnh");
-                            dishImage.setIcon(null);
-                        } else {
-                            // Lấy đường dẫn thư mục gốc của dự án
-                            String basePath = System.getProperty("user.dir");
-                            
-                            // Kết hợp thư mục gốc với đường dẫn tương đối từ cơ sở dữ liệu
-                            File imageFile = new File(basePath, imagePath);
+						tf_dish_id.setText(DishTable.getValueAt(selectedRow, 0).toString());
+						tf_dish_name.setText(DishTable.getValueAt(selectedRow, 1).toString());
+						tf_dish_price.setText(DishTable.getValueAt(selectedRow, 2).toString());
+						tf_dish_category.setText(DishTable.getValueAt(selectedRow, 3).toString());
 
-                            if (imageFile.exists()) {
-                                dishImage.setText("");
-                                ImageIcon imageIcon = new ImageIcon(imageFile.getAbsolutePath());
-                                dishImage.setIcon(imageIcon);
-                            } else {
-                                dishImage.setText("Ảnh không tồn tại");
-                            }
-                        }
-                    }
-                }
-            }
-        });
-		
+						Dish tmpDish = DishDAO.getDish(DishSelected);
+						String imagePath = tmpDish.getDishImage(); // Lấy đường dẫn ảnh từ đối tượng
+
+						if (imagePath == null || imagePath.isEmpty()) {
+							dishImage.setText("Chưa cập nhật ảnh");
+							dishImage.setIcon(null);
+						} else {
+							// Lấy đường dẫn thư mục gốc của dự án
+							String basePath = System.getProperty("user.dir");
+
+							// Kết hợp thư mục gốc với đường dẫn tương đối từ cơ sở dữ liệu
+							File imageFile = new File(basePath, imagePath);
+
+							if (imageFile.exists()) {
+								dishImage.setText("");
+								ImageIcon imageIcon = new ImageIcon(imageFile.getAbsolutePath());
+								dishImage.setIcon(imageIcon);
+							} else {
+								dishImage.setText("Ảnh không tồn tại");
+							}
+						}
+					}
+				}
+			}
+		});
+
 		table_mode_show_table_for_menu.setViewportView(DishTable);
-    	loadDish();
-		
+		loadDish();
+
 		return table_mode_show_table_for_menu;
-    }
+	}
     
-	public void updateTable(List<Dish> dishes) {
+	public void sortDish(List<Dish> dishes) {
 		// Xóa tất cả dữ liệu hiện tại trong bảng
 		Dish_table_model.setRowCount(0);
 
@@ -886,62 +960,168 @@ private JScrollPane switchTableModeForMenu() {
         menu.setBounds(0, 0, 1202, 296);
         menu.setLayout(new GridLayout(0, 5, 10, 10));
         menu.setPreferredSize(new Dimension(500, 500));
+        menu.setDoubleBuffered(true);
         
         loadMenu();
         
     	JScrollPane scrollPane = new JScrollPane(menu);
         scrollPane.setBounds(0, 0, 1009, 298);
         grip_mode_show_menu.add(scrollPane);
+        
+        menu.revalidate(); // Làm mới giao diện
+        menu.repaint();
     	
     	return grip_mode_show_menu;
     }
     
+    private Map<String, JPanel> dishPanels = new HashMap<>();
+    
     private void loadMenu() {
         for (int i = 1; i <= dishCount; i++) {
         	Dish dishes = DishDAO.accessDish(i - 1);
-        	addDishToMenu("Món " + i, dishes);
+        	addDishToMenu("Món " + dishes.getDishName(), dishes);
         }
     }
+    
+    private void updateDishName(String dishId) {
+    	Dish dish = DishDAO.getDish(dishId);
+    	String newName = dish.getDishName();
+    	
+        // Tìm JPanel chứa món ăn
+        if (dishPanels.containsKey(dishId)) {
+            JPanel dishPanel = dishPanels.get(dishId);
+            
+            // Duyệt qua các thành phần trong JPanel để tìm JLabel hiển thị tên món ăn
+            for (Component component : dishPanel.getComponents()) {
+                if (component instanceof JLabel) {
+                    JLabel lblDishName = (JLabel) component;
+
+                    // Kiểm tra nếu JLabel là tên món ăn (thường không có ảnh)
+                    if (lblDishName.getText().startsWith("Món")) {
+                        lblDishName.setText(newName);
+
+                        // Làm mới giao diện
+                        dishPanel.revalidate();
+                        dishPanel.repaint();
+                        return;
+                    }
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy món ăn để cập nhật tên!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void updateDishImage(String dishId, String newImagePath) {
+        // Tìm JPanel chứa món ăn
+        if (dishPanels.containsKey(dishId)) {
+            JPanel dishPanel = dishPanels.get(dishId);
+            
+            // Duyệt qua các thành phần trong JPanel để tìm JLabel chứa ảnh
+            for (Component component : dishPanel.getComponents()) {
+                if (component instanceof JLabel) {
+                    JLabel lblDishImage = (JLabel) component;
+
+                    // Kiểm tra nếu JLabel hiện tại chứa hình ảnh
+                    if (lblDishImage.getIcon() != null || lblDishImage.getText().equals("Không có ảnh")) {
+                        // Cập nhật ảnh mới
+                        setDishImage(lblDishImage, newImagePath);
+                        
+                        // Làm mới giao diện
+                        dishPanel.revalidate();
+                        dishPanel.repaint();
+                        return;
+                    }
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy món ăn cần cập nhật!");
+        }
+    }
+    
+	private void removeDish(String dishId) {
+		if (dishPanels.containsKey(dishId)) {
+			JPanel dishPanel = dishPanels.get(dishId);
+
+			menu.remove(dishPanel);
+			dishPanels.remove(dishId);
+			dishCount--;
+
+			menu.revalidate();
+			menu.repaint();
+
+			JOptionPane.showMessageDialog(null, "Món ăn đã được xóa!");
+		} else {
+			JOptionPane.showMessageDialog(null, "Không tìm thấy món ăn để xóa.");
+		}
+	}
     
     private void addNewDish() {
         dishCount++;
         Dish dishes = DishDAO.accessDish(dishCount - 1);
-        addDishToMenu("Món " + dishCount, dishes);
-        menu.revalidate(); // Làm mới giao diện
+        addDishToMenu("Món " + dishes.getDishName(), dishes);
+        
+        // Làm mới giao diện
+        menu.revalidate(); 
         menu.repaint();
     }
     
-    private void addDishToMenu(String dish, Dish dishes) {
-    	String tmp = DishDAO.getDishImage(dishes.getDishID());
-    	
-    	JPanel JPdish = new JPanel();
-    	JPdish.setBackground(Color.WHITE);
-    	JPdish.setPreferredSize(new Dimension(100, 100));
-    	JPdish.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-    	
-    	JLabel lbl_dish = new JLabel();
-    	if (tmp != null) {
-    		ImageIcon imageIcon = new ImageIcon(tmp);
-            lbl_dish.setIcon(imageIcon);
-    	} else {
-    		lbl_dish.setText("<html>" + dish + "<br>");
-    	}
+    private void addDishToMenu(String dishName, Dish dishes) {
+        String tmp = dishes.getDishImage();
         
-        JPdish.add(lbl_dish);
+        JPanel JPdish = new JPanel();
+        JPdish.setBackground(Color.WHITE);
+        JPdish.setPreferredSize(new Dimension(100, 150));
+        JPdish.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        JPdish.setLayout(new BoxLayout(JPdish, BoxLayout.Y_AXIS));
+
+        JLabel lblDishName = new JLabel(dishName, SwingConstants.CENTER);
+        lblDishName.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel lblDishImage = new JLabel();
+        lblDishImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+        setDishImage(lblDishImage, tmp);
         
+        JPdish.add(lblDishName);
+        JPdish.add(lblDishImage);
+
         // Sự kiện khi nhấn
         JPdish.addMouseListener(new MouseAdapter() {
-        	@Override
-        	public void mouseClicked(MouseEvent e) {
-        		JOptionPane.showMessageDialog(null, "Bạn đã chọn " + dish);
-        	}
-		});
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int confirm = JOptionPane.showConfirmDialog(
+                    null, 
+                    "Bạn có chắc chắn muốn xóa " + dishName + "?", 
+                    "Xác nhận xóa", 
+                    JOptionPane.YES_NO_OPTION
+                );
+                if (confirm == JOptionPane.YES_OPTION) {
+                    removeDish(dishes.getDishID());
+                }
+            }
+        });
+
+        // Thêm món ăn vào danh sách và giao diện
+        dishPanels.put(dishes.getDishID(), JPdish);
         menu.add(JPdish);
+
+        // Làm mới giao diện
+        menu.revalidate();
+        menu.repaint();
     }
     
+    private void setDishImage(JLabel lblDish, String imagePath) {
+        if (imagePath != null && !imagePath.isEmpty()) {
+            ImageIcon imageIcon = new ImageIcon(imagePath);
+            lblDish.setIcon(imageIcon);
+        } else {
+            lblDish.setText("Không có ảnh");
+        }
+    }
+
     public void loadDish() {
     	DishDAO.loadData();
-		for(Dish dish : DishDAO.map.values()) {
+		for(Dish dish : DishDAO.list) {
 	        Object[] newRow = {dish.getDishID(), dish.getDishName(), dish.getDishPrice(), dish.getDishCategory()};
 	        Dish_table_model.addRow(newRow);
 		}
@@ -992,7 +1172,6 @@ private JScrollPane switchTableModeForMenu() {
             try {
                 Dish dish = new Dish(dishID, dishName, price, category, relativeImagePath);
                 DishDAO.addDish(dish);
-                DishDAO.updateDishImage(relativeImagePath, dishID);
                 Object[] newRow = {dish.getDishID(), dish.getDishName(), dish.getDishPrice(), dish.getDishCategory()};
                 Dish_table_model.addRow(newRow);
             } catch (Exception e) {
@@ -1010,15 +1189,15 @@ private JScrollPane switchTableModeForMenu() {
 
         // Lấy thông tin hiện tại từ hàng được chọn
         String currentDishID = Dish_table_model.getValueAt(selectedRow, 0).toString();
-        String currentDishName = Dish_table_model.getValueAt(selectedRow, 1) != null ? Dish_table_model.getValueAt(selectedRow, 1).toString() : "";
-        Double currentPrice = Dish_table_model.getValueAt(selectedRow, 2) != null ? Double.valueOf(Dish_table_model.getValueAt(selectedRow, 2).toString()) : null;
-        String currentCategory = Dish_table_model.getValueAt(selectedRow, 3) != null ? Dish_table_model.getValueAt(selectedRow, 3).toString() : "";
-        
-        // Lấy thông tin hình ảnh từ CSDL (hoặc giả định là giá trị mặc định)
-        String currentImage = DishDAO.getDishImage(currentDishID); // Lấy từ cơ sở dữ liệu
         
         // Tạo đối tượng hàng hóa hiện tại
-        Dish currentDish = new Dish(currentDishID, currentDishName, currentPrice, currentCategory, currentImage);
+        Dish currentDish = DishDAO.getDish(currentDishID);
+        
+        // Lấy thông tin của đối tượng
+        String currentDishName = currentDish.getDishName();
+        Double currentPrice = currentDish.getDishPrice();
+        String currentCategory = currentDish.getDishCategory();
+        String currentImage = currentDish.getDishImage();
         
         // Tạo các trường nhập liệu
         JTextField tfDishID = new JTextField(currentDishID);
@@ -1060,7 +1239,11 @@ private JScrollPane switchTableModeForMenu() {
 			try {
 				Dish newDish = new Dish(dishID, name, price, category, image);
 				DishDAO.updateDish(currentDish, newDish);
-				DishDAO.updateDishImage(image, dishID);
+				
+				// Cập nhật tên cho ô hiển thị ở chế độ lưới nếu tên có sự thay đổi
+				if (currentDishName != name) {
+					updateDishName(dishID);
+				}
 
 				Dish_table_model.setValueAt(newDish.getDishName(), selectedRow, 1);
 				Dish_table_model.setValueAt(newDish.getDishPrice(), selectedRow, 2);
@@ -1070,27 +1253,23 @@ private JScrollPane switchTableModeForMenu() {
 			}
 		}
 	}
+    
+    // Phương thức xóa hàng trong bảng
+	public void deleteDish() {
+		int selectedRow = DishTable.getSelectedRow();
 
-    public void deleteDish() {
-        int selectedRow = DishTable.getSelectedRow();
-        
-        // Kiểm tra nếu có dòng được chọn
-        if (selectedRow >= 0) {
-            String dishID = DishTable.getValueAt(selectedRow, 0).toString();
-            
-            // Gọi phương thức xóa hàng hóa trong cơ sở dữ liệu
-            boolean success = DishDAO.deleteDish(dishID);
-            
-            if (success) {
-                // Nếu xóa thành công, xóa dòng trong bảng
-            	Dish_table_model.removeRow(selectedRow);
-            } else {
-                JOptionPane.showMessageDialog(null, "Xóa món ăn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
-            }
-        } else {
-            JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-        }
-    }
+		String dishID = DishTable.getValueAt(selectedRow, 0).toString();
+
+		// Gọi phương thức xóa hàng hóa trong Class DAO
+		boolean success = DishDAO.deleteDish(dishID);
+
+		if (success) {
+			// Nếu xóa thành công, xóa dòng trong bảng
+			Dish_table_model.removeRow(selectedRow);
+		} else {
+			JOptionPane.showMessageDialog(null, "Xóa món ăn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
+		}
+	}
     
     public void addImage() {
         int selectedRow = DishTable.getSelectedRow();
@@ -1099,18 +1278,12 @@ private JScrollPane switchTableModeForMenu() {
             return;
         }
 
-        // Lấy thông tin hiện tại từ hàng được chọn
+        // Lấy id từ hàng được chọn
         String currentDishID = Dish_table_model.getValueAt(selectedRow, 0).toString();
-        String currentDishName = Dish_table_model.getValueAt(selectedRow, 1) != null ? Dish_table_model.getValueAt(selectedRow, 1).toString() : "";
-        Double currentPrice = Dish_table_model.getValueAt(selectedRow, 2) != null ? Double.valueOf(Dish_table_model.getValueAt(selectedRow, 2).toString()) : null;
-        String currentCategory = Dish_table_model.getValueAt(selectedRow, 3) != null ? Dish_table_model.getValueAt(selectedRow, 3).toString() : "";
 
-        // Lấy thông tin hình ảnh từ CSDL
-        String currentImage = DishDAO.getDishImage(currentDishID);
-
-        // Tạo đối tượng Dish
-        Dish currentDish = new Dish(currentDishID, currentDishName, currentPrice, currentCategory, currentImage);
-
+        // Lấy đối tượng Dish
+        Dish currentDish = DishDAO.getDish(currentDishID);
+        
         // Chọn và sao chép hình ảnh
         String newImage = chooseAndCopyImage();
         if (newImage == null || newImage.isEmpty()) {
@@ -1126,10 +1299,11 @@ private JScrollPane switchTableModeForMenu() {
 
         try {
             // Cập nhật hình ảnh mới vào cơ sở dữ liệu
-            DishDAO.updateDishImage(newImage, currentDishID);
+            currentDish.setDishImage(newImage);
+            updateDishImage(currentDishID, newImage);
 
             // Hiển thị thông báo thành công
-            JOptionPane.showMessageDialog(null, "Hình ảnh đã được cập nhật thành công cho món: " + currentDishName);
+            JOptionPane.showMessageDialog(null, "Hình ảnh đã được cập nhật thành công cho món: " + currentDish.getDishImage());
         } catch (Exception e) {
             // Hiển thị thông báo lỗi
             JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
@@ -1300,6 +1474,7 @@ private JScrollPane switchTableModeForMenu() {
     		public void mousePressed(MouseEvent e) {
     			lbl_add.setForeground(Color.WHITE);
     			lbl_add.setBackground(new Color(33, 136, 56));
+    			addTable();
     		}
     		
     		@Override
@@ -1672,29 +1847,44 @@ private JScrollPane switchTableModeForMenu() {
     	// Chế độ lưới (Switch Mode)
     	grip_mode_show_table_floor1 = new JPanel();
     	grip_mode_show_table_floor1.setBackground(Color.WHITE);
-    	grip_mode_show_table_floor1.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	grip_mode_show_table_floor1.setBorder(BorderFactory.createLineBorder(new Color(45, 61, 75), 1));
     	grip_mode_show_table_floor1.setBounds(38, 224, 1204, 298);
     	grip_mode_show_table_floor1.setLayout(null);
         
         floor1 = new JPanel();
         floor1.setBackground(Color.WHITE);
-        floor1.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
         floor1.setBounds(0, 0, 1202, 296);
         floor1.setLayout(new GridLayout(0, 4, 10, 10));
     	
         loadTablesFloor1();
         
     	JScrollPane scrollPane1 = new JScrollPane(floor1);
+    	scrollPane1.setBackground(Color.WHITE);
         scrollPane1.setBounds(0, 0, 1204, 298);
+        scrollPane1.setBorder(BorderFactory.createCompoundBorder(
+        	    BorderFactory.createLineBorder(Color.BLACK, 1), // Đường viền ngoài (tùy chọn)
+        	    new EmptyBorder(5, 5, 5, 5) // Khoảng cách bên trong: trên, trái, dưới, phải
+        	));
         grip_mode_show_table_floor1.add(scrollPane1);
     	
     	return grip_mode_show_table_floor1;
     }
     
     private void loadTablesFloor1() {
-        for (int i = 1; i <= tableCountFloor1; i++) {
-            addTableToPanelFloor1("Bàn " + i, "Trống");
-        }
+    	if (tableCountFloor1 == 0) {
+    		JLabel notion = new JLabel("Hiện tầng này chưa có bàn nào");
+    		notion.setForeground(Color.BLACK);
+    		notion.setBackground(Color.WHITE);
+    		notion.setHorizontalAlignment(SwingConstants.CENTER);
+    		notion.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+            notion.setBounds(0, 0, 1202, 296);
+            
+            
+    	} else {
+	        for (int i = 1; i <= tableCountFloor1; i++) {
+	            addTableToPanelFloor1("Bàn " + i, "Trống");
+	        }
+    	}
     }
     
     private void addTableFloor1() {
@@ -1733,23 +1923,39 @@ private JPanel switchGripModeFloor2() {
         
         floor2 = new JPanel();
         floor2.setBackground(Color.WHITE);
-        floor2.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
         floor2.setBounds(0, 0, 1202, 296);
         floor2.setLayout(new GridLayout(0, 4, 10, 10));
     	
         loadTablesFloor2();
         
     	JScrollPane scrollPane2 = new JScrollPane(floor2);
-        scrollPane2.setBounds(0, 0, 1204, 298);
+    	scrollPane2.setBackground(Color.WHITE);
+    	scrollPane2.setBounds(0, 0, 1204, 298);
+    	scrollPane2.setBorder(BorderFactory.createCompoundBorder(
+        	    BorderFactory.createLineBorder(Color.BLACK, 1), // Đường viền ngoài (tùy chọn)
+        	    new EmptyBorder(5, 5, 5, 5) // Khoảng cách bên trong: trên, trái, dưới, phải
+        	));
+        
         grip_mode_show_table_floor2.add(scrollPane2);
     	
     	return grip_mode_show_table_floor2;
     }
     
     private void loadTablesFloor2() {
-        for (int i = 1; i <= tableCountFloor2; i++) {
-            addTableToPanelFloor2("Bàn " + i, "Trống");
-        }
+    	if (tableCountFloor2 == 0) {
+    		JLabel notion = new JLabel("Hiện tầng này chưa có bàn nào");
+    		notion.setForeground(Color.BLACK);
+    		notion.setBackground(Color.WHITE);
+    		notion.setHorizontalAlignment(SwingConstants.CENTER);
+    		notion.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+            notion.setBounds(0, 0, 1202, 296);
+            
+            
+    	} else {
+	        for (int i = 1; i <= tableCountFloor2; i++) {
+	            addTableToPanelFloor2("Bàn " + i, "Trống");
+	        }
+	    }
     }
     
     private void addTableFloor2() {
@@ -1783,6 +1989,59 @@ private JPanel switchGripModeFloor2() {
 	        Object[] newRow = {table.getTableID(), table.getFloorStay(), table.getOperatingStatus(), table.getResponsibleBy(), table.getClientNum()};
 	        Floor_table_model.addRow(newRow);
 		}
+    }
+    
+    public void addTable() {
+        JTextField tfTableID = new JTextField("#T");
+        JTextField tfFloor = new JTextField();
+        JTextField tfStatus = new JTextField("Đang chuẩn bị");
+        tfStatus.setBackground(Color.WHITE);
+        tfStatus.setEditable(false);
+        JTextField tfResBy = new JTextField();
+        tfResBy.setBackground(Color.WHITE);
+        tfResBy.setEditable(false);
+        JTextField tfClientNum = new JTextField("0");
+        tfClientNum.setBackground(Color.WHITE);
+        tfClientNum.setEditable(false);
+
+        JPanel panel = new JPanel(new GridLayout(6, 2));
+        panel.add(new JLabel("Mã Bàn:"));
+        panel.add(tfTableID);
+        panel.add(new JLabel("Tầng Hoạt Động:"));
+        panel.add(tfFloor);
+        panel.add(new JLabel("Trạng Thái:"));
+        panel.add(tfStatus);
+        panel.add(new JLabel("Phục vụ bởi:"));
+        panel.add(tfResBy);
+        panel.add(new JLabel("Số Lượng Khách Hàng:"));
+        panel.add(tfClientNum);
+
+        int result = JOptionPane.showConfirmDialog(null, panel, "Thêm bàn mới", JOptionPane.OK_CANCEL_OPTION);
+
+        // Xử lý nếu người dùng nhấn OK
+        if (result == JOptionPane.OK_OPTION) {
+            String tableID = tfTableID.getText();
+            if (tableID.isEmpty() || tableID.equals("#T")) {
+                JOptionPane.showMessageDialog(null, "Mã bàn không được để trống!");
+                return;
+            }
+
+            // Lấy thông tin, nếu trống thì chuyển thành "null"
+            String floor = tfFloor.getText().trim().isEmpty() ? null : tfFloor.getText().trim();
+            String status = tfStatus.getText().trim().isEmpty() ? null : tfStatus.getText().trim();
+            String resBy = tfResBy.getText().trim().isEmpty() ? null : tfResBy.getText().trim();
+            String clientNum = tfClientNum.getText().trim().isEmpty() ? null : tfClientNum.getText().trim();
+
+            try {
+                Table table = new Table(tableID, floor, status, resBy, clientNum);
+                if(TableDAO.addTable(table)) {
+	                Object[] newRow = {table.getTableID(), table.getFloorStay(), table.getOperatingStatus(), table.getResponsibleBy(), table.getClientNum()};
+	                Floor_table_model.addRow(newRow);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
+            }
+        }
     }
     
     private JPanel createEmployeePanel() {

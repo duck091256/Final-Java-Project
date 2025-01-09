@@ -15,6 +15,25 @@ import java.util.Comparator;
 
 public class RatingCalculation {
 
+    public static ArrayList<RankingStaff> getListOfRankingStaff() {
+        ArrayList<RankingStaff> ans = new ArrayList<>();
+
+        ResultSet rs = loadDataRankingStaff();
+
+        try {
+
+            while(rs.next()) {
+                RankingStaff rankingStaff = new RankingStaff(rs.getString("staffID"), rs.getInt("rating"));
+                ans.add(rankingStaff);
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
+        ans.sort(Comparator.comparing(RankingStaff::getRating));
+        return ans;
+    };
+
     /**
      * Hàm xử lí thống kê món ăn bán chạy trong tuần.
      *
@@ -26,7 +45,7 @@ public class RatingCalculation {
         ArrayList<Dish> ans = new ArrayList<>();
         ArrayList<DetailReceipt> detailReceiptArrayList = new ArrayList<>();
 
-        ResultSet rs = loadDataThisWeek();
+        ResultSet rs = loadDataDishThisWeek();
         if (rs == null) return null;
 
         try {
@@ -98,7 +117,7 @@ public class RatingCalculation {
      *
      * @return 1 ResultSet là kết quả của truy vấn database
      */
-    private static ResultSet loadDataThisWeek() {
+    private static ResultSet loadDataDishThisWeek() {
         String sql = "SELECT * " +
                 "FROM detail_receipt " +
                 "INNER JOIN " +
@@ -114,6 +133,17 @@ public class RatingCalculation {
 
         try (Connection conn = JDBCUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+            return stmt.executeQuery();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static ResultSet loadDataRankingStaff() {
+        String sql = "SELECT staffID, rating FROM ranking_staff";
+
+        try(Connection conn = JDBCUtil.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             return stmt.executeQuery();
         } catch (Exception e) {
             e.printStackTrace();

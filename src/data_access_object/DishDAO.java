@@ -131,72 +131,50 @@ public class DishDAO {
 	}
 
 	public static boolean updateDish(Dish dish, Dish newDish) {
-	    // Tìm món ăn hiện tại trong danh sách
-	    for (int i = 0; i < DishDAO.list.size(); i++) {
-	        if (DishDAO.list.get(i).getDishID().equals(dish.getDishID())) {
-	            // Nếu không cập nhật ID của Dish
-	            if (newDish.getDishID().equals(dish.getDishID())) {
-	                DishDAO.list.set(i, newDish);
+		String oldID = dish.getDishID();
+		String newID = newDish.getDishID();
 
-	                // Đồng bộ với originalList
-	                for (int j = 0; j < DishDAO.originalList.size(); j++) {
-	                    if (DishDAO.originalList.get(j).getDishID().equals(dish.getDishID())) {
-	                        DishDAO.originalList.set(j, newDish);
-	                        break;
-	                    }
-	                }
+		// Nếu không tìm thấy món ăn cần cập nhật
+		if (!map.containsKey(oldID)) {
+			JOptionPane.showMessageDialog(null, "Không tìm thấy món ăn cần cập nhật!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
 
-	                JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-	                return true;
-	            }
+		if (!oldID.equals(newID) && map.containsKey(newID)) {
+			JOptionPane.showMessageDialog(null, "Cập nhật món ăn thất bại, ID đã tồn tại!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+			return false;
+		}
 
-	            // Nếu cập nhật ID của Dish
-	            // Kiểm tra ID mới đã tồn tại hay chưa
-	            for (Dish d : DishDAO.list) {
-	                if (d.getDishID().equals(newDish.getDishID())) {
-	                    JOptionPane.showMessageDialog(null, "Cập nhật món ăn thất bại, ID đã tồn tại!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-	                    return false;
-	                }
-	            }
+		for (int i = 0; i < list.size(); i++) {
+			if (list.get(i).getDishID().equals(oldID)) {
+				list.set(i, newDish);
+			}
+		}
 
-	            // Nếu ID mới chưa tồn tại
-	            DishDAO.list.remove(i);
-	            DishDAO.list.add(newDish);
+		for (int i = 0; i < originalList.size(); i++) {
+			if (originalList.get(i).getDishID().equals(oldID)) {
+				originalList.set(i, newDish);
+			}
+		}
 
-	            // Đồng bộ với originalList
-	            for (int j = 0; j < DishDAO.originalList.size(); j++) {
-	                if (DishDAO.originalList.get(j).getDishID().equals(dish.getDishID())) {
-	                    DishDAO.originalList.remove(j);
-	                    DishDAO.originalList.add(newDish);
-	                    break;
-	                }
-	            }
+		map.remove(oldID);
+		map.put(newID, newDish);
 
-	            JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-	            return true;
-	        }
-	    }
-
-	    // Nếu không tìm thấy món ăn cần cập nhật
-	    JOptionPane.showMessageDialog(null, "Không tìm thấy món ăn cần cập nhật!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-	    return false;
+		JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+		return true;
 	}
 
 	public static boolean deleteDish(String id) {
-	    // Lưu lại kích thước ban đầu của cả list và originalList
-	    int initialSizeList = list.size();
-	    int initialSizeOriginalList = originalList.size();
-	    
+		if (!DishDAO.map.containsKey(id)) return false;
+
+		// delete from map
+		map.remove(id);
+
 	    // Xóa món ăn khỏi list
-	    boolean isDeletedFromList = list.removeIf(dish -> dish.getDishID().equals(id));
-	    
-	    // Nếu món ăn đã bị xóa trong list, xóa nó khỏi originalList
-	    if (isDeletedFromList) {
-	        originalList.removeIf(dish -> dish.getDishID().equals(id));
-	    }
-	    
-	    // Kiểm tra xem list và originalList đã thay đổi chưa
-	    return initialSizeList != list.size() && initialSizeOriginalList != originalList.size();
+	    list.removeIf(dish -> dish.getDishID().equals(id));
+		originalList.removeIf(dish -> dish.getDishID().equals(id));
+
+		return true;
 	}
 	
 	public static String getDishImage(String dishID) {

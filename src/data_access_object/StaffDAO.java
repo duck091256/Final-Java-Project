@@ -6,6 +6,7 @@ import java.util.*;
 
 import javax.swing.JOptionPane;
 
+import database.JDBCUtil;
 import model.*;
 import util.*;
 
@@ -34,7 +35,7 @@ public class StaffDAO {
 		
 		String sql = "SELECT * FROM STAFF";
 		
-		try (Connection conn = DBConnection.getConnection(); 
+		try (Connection conn = JDBCUtil.getConnection(); 
 			 PreparedStatement stmt = conn.prepareStatement(sql)) {
 			
 			ResultSet rs = stmt.executeQuery();
@@ -47,7 +48,7 @@ public class StaffDAO {
                         rs.getString("fullName"),
                         rs.getString("phone"),
                         rs.getString("position"),
-                        rs.getByte("sex"),
+                        rs.getString("sex"),
                         rs.getTime("startShift"),
                         rs.getTime("endShift")
 				);
@@ -142,7 +143,7 @@ public class StaffDAO {
 		Staff staff = StaffDAO.map.get(id);
 		StaffDAO.map.remove(id);
 		list.remove(staff);
-		JOptionPane.showMessageDialog(null, "Xóa nhân viên thất bại XXX", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(null, "Xóa nhân viên thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 		return true;
 	}
 	
@@ -153,7 +154,7 @@ public class StaffDAO {
 	 *
 	 */
 	public static void storeDate() {
-		try (Connection conn = DBConnection.getConnection()) {
+		try (Connection conn = JDBCUtil.getConnection()) {
 
 			clearTable(conn);
 			insertData(conn);
@@ -190,7 +191,7 @@ public class StaffDAO {
 	 * @param conn - Connection đã được kết nối với database
 	 */
 	private static void insertData(Connection conn) {
-		String sql = "INSERT INTO STAFF VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+		String sql = "INSERT INTO STAFF VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 			for (Staff staff : list) {
 				stmt.setString(1, staff.getStaffID());
@@ -199,7 +200,7 @@ public class StaffDAO {
 				stmt.setString(4, staff.getFullName());
 				stmt.setString(5, staff.getPhone());
 				stmt.setString(6, staff.getPosition());
-				stmt.setByte(7, staff.getSex());
+				stmt.setString(7, staff.getSex());
 				stmt.setTime(8, staff.getStartShift());
 				stmt.setTime(9,  staff.getEndShift());
 				

@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 import javax.swing.JOptionPane;
 
 import database.JDBCUtil;
+import model.Dish;
 import model.Staff;
 import model.Table;
 
@@ -183,7 +184,7 @@ public class TableDAO {
 	 * @param conn - Connection đã được kết nối với database
 	 */
 	private static void insertData(Connection conn) {
-		String sql = "INSERT INTO dining_table VALUES (?, ?, ?, ?, ?, ?)";
+		String sql = "INSERT INTO dining_table VALUES (?, ?, ?, ?, ?)";
 		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 			for (Table table : list) {
 				stmt.setString(1, table.getTableID());

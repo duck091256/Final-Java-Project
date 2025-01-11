@@ -9,11 +9,11 @@ public class Staff {
 	private String fullName;
 	private String phone;
 	private String position;
-	private byte sex;
+	private String sex;
 	private Time startShift;	// K cần sửa
 	private Time endShift;		// K cần sửa	
 
-	public Staff(String staffID, String userName, String password, String fullName, String phone, String position, byte sex,
+	public Staff(String staffID, String userName, String password, String fullName, String phone, String position, String sex,
 			Time startShift, Time endShift) {
 		this.staffID = staffID;
 		this.userName = userName;
@@ -99,12 +99,12 @@ public class Staff {
 	}
 	
 	
-	public byte getSex() {
+	public String getSex() {
 		return sex;
 	}
 
 
-	public void setSex(byte sex) {
+	public void setSex(String sex) {
 		this.sex = sex;
 	}
 

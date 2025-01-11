@@ -30,6 +30,7 @@ public class DishDAO {
     public static ArrayList<Dish> originalList; // Lưu trạng thái ban đầu của danh sách
 
     public static void loadData() {
+    	map = new HashMap<String, Dish>();
         list = new ArrayList<>();
 
         String sql = "SELECT * FROM dish";

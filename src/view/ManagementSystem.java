@@ -24,14 +24,17 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.category.DefaultCategoryDataset;
 
+import data_access_object.BillDAO;
 import data_access_object.DishDAO;
 import data_access_object.EmployeeDAO;
+import data_access_object.StaffDAO;
 import data_access_object.TableDAO;
-import fx.RoundedBorderPanel;
-import fx.RoundedLabel;
-import fx.RoundedLabelEffect;
+import fx.*;
+import model.Bill;
 import model.Dish;
 import model.Employee;
+import model.RankingStaff;
+import model.Staff;
 import model.Table;
 import service.RatingCalculation;
 
@@ -41,36 +44,55 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
 import java.sql.Date;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 
 import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.MediaTracker;
 
 import javax.swing.border.*;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
 
 public class ManagementSystem extends JFrame {
 
     private static final long serialVersionUID = 1L;
-    private JLabel dishImage;
+    private boolean isPanelResized_2 = false; // Trạng thái kích thước của lbl_down_up_2
+    private boolean isPanelResized_1 = false; // Trạng thái kích thước của lbl_down_up_1
+    private JLabel dishImage, lbl_table_image;
+    private JPanel panel_setting;
+    private JPanel floorPanel, panel_image;
     private Map<Integer, Integer> tableCount = TableDAO.numOfTableByFloor();
     private int tableCountFloor1 = tableCount.getOrDefault(1, 0), tableCountFloor2 = tableCount.getOrDefault(2, 0), dishCount = DishDAO.countRows();
     private JPanel contentPane;
@@ -84,14 +106,14 @@ public class ManagementSystem extends JFrame {
     private JLabel lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee;
     private CardLayout cardLayout, switch_CardLayout_for_menu, switch_CardLayout;
     private JPanel panel_contain_CardLayout, panel_contain_switch_CardLayout, panel_contain_switch_CardLayout_for_menu;
-    private JTable DishTable, FloorTable, StaffTable;
-    private DefaultTableModel Dish_table_model, Floor_table_model, Emp_table_model;
-    private JTextField tf_employee_id;
-    private JTextField tf_employee_name;
+    private JTable DishTable, FloorTable, ReceiptTable, StaffTable;
+    private DefaultTableModel Dish_table_model, Floor_table_model, Receipt_table_mode, Emp_table_model;
+    private JTextField tf_staff_id;
+    private JTextField tf_staff_name;
     private JTextField tf_gender;
     private JTextField tf_phone_num;
     private JTextField tf_position;
-    private String DishSelected, FloorSelected, EmpSelected;
+    private String DishSelected, FloorSelected, ReceiptSelected, EmpSelected;
     private JTextField tf_dish_id;
     private JTextField tf_dish_name;
     private JTextField tf_dish_price;
@@ -101,7 +123,6 @@ public class ManagementSystem extends JFrame {
     private JTextField tf_tableNum;
     private JTextField tf_Respond;
     private JTextField tf_clientNum;
-    
     /**
      * Launch the application.
      */
@@ -135,6 +156,8 @@ public class ManagementSystem extends JFrame {
     public ManagementSystem() {
     	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
     		DishDAO.storeData();
+    		TableDAO.storeData();
+    		StaffDAO.storeDate();
         }));
     	
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -300,6 +323,7 @@ public class ManagementSystem extends JFrame {
         	
         	@Override
         	public void mouseClicked(MouseEvent e) {
+        		cardLayout.show(panel_contain_CardLayout, "Receipt");
         		changeBoldToPlain(lbl_overall, lbl_dish, lbl_table, lbl_bill, lbl_employee);
         		lbl_bill.setFont(new Font("Arial", Font.BOLD, 18));
         		lbl_bill.setForeground(new Color(255, 255, 255));
@@ -386,12 +410,13 @@ public class ManagementSystem extends JFrame {
         panel_contain_CardLayout.add(createOverviewPanel(), "Overall");
         panel_contain_CardLayout.add(createMenuPanel(), "Menu");
         panel_contain_CardLayout.add(createFloorPanel(), "Floor");
-        panel_contain_CardLayout.add(createEmployeePanel(), "Employee");
+        panel_contain_CardLayout.add(createReceiptPanel(), "Receipt");
+        panel_contain_CardLayout.add(createStaffPanel(), "Employee");
         
         contentPane.add(panel_contain_CardLayout);
     }
     
-    public void changeBoldToPlain(JLabel lbl_overall,JLabel lbl_dish,JLabel lbl_table,JLabel lbl_bill,JLabel lbl_employee) {
+    private void changeBoldToPlain(JLabel lbl_overall,JLabel lbl_dish,JLabel lbl_table,JLabel lbl_bill,JLabel lbl_employee) {
     	// Đổi tất cả label thành PLAIN trước mới kiểm tra rồi chuyển thành BOLD
     	this.lbl_overall.setFont(new Font("Arial", Font.PLAIN, 18));
 		this.lbl_overall.setForeground(new Color(255, 255, 255));
@@ -421,7 +446,7 @@ public class ManagementSystem extends JFrame {
     	}
     }
     
-    public static boolean isBold(JLabel label) {
+    private static boolean isBold(JLabel label) {
         Font font = label.getFont();
         return (font.getStyle() & Font.BOLD) != 0;
     }
@@ -431,12 +456,19 @@ public class ManagementSystem extends JFrame {
     	overallPanel.setBackground(new Color(255, 255, 255));
     	overallPanel.setLayout(null);
     	
-    	JPanel panel_rush_hour = new JPanel();
-    	panel_rush_hour.setLayout(null);
-    	panel_rush_hour.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-    	panel_rush_hour.setBackground(Color.WHITE);
-    	panel_rush_hour.setBounds(899, 33, 345, 486);
-    	overallPanel.add(panel_rush_hour);
+    	JPanel panel_ranking_staff = new JPanel();
+    	panel_ranking_staff.setLayout(null);
+    	panel_ranking_staff.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_ranking_staff.setBackground(Color.WHITE);
+    	panel_ranking_staff.setBounds(899, 33, 345, 486);
+    	overallPanel.add(panel_ranking_staff);
+    	
+        JPanel staffPanel = createRankingStaffPanel();
+
+        JScrollPane scrollPane = new JScrollPane(staffPanel);
+        scrollPane.setBounds(10, 10, 325, 466);
+        panel_ranking_staff.add(scrollPane);
+
     	
     	JPanel panel_hot_trend = new JPanel();
     	panel_hot_trend.setLayout(null);
@@ -454,7 +486,6 @@ public class ManagementSystem extends JFrame {
     	
     	DefaultCategoryDataset dataset = createDataset();
 
-    	// Tạo biểu đồ
     	JFreeChart barChart = ChartFactory.createBarChart(
     	        "Món ăn bán chạy",  
     	        "Tên món ăn",        
@@ -464,29 +495,52 @@ public class ManagementSystem extends JFrame {
 
     	ChartPanel chartPanel = new ChartPanel(barChart);
 
-    	// Giảm kích thước chartPanel một chút so với panel_hot_trend
-    	int padding = 20; // Khoảng cách giảm (10px từ mỗi cạnh)
+    	int padding = 20;
     	chartPanel.setPreferredSize(new Dimension(
     	        panel_hot_trend.getWidth() - padding,
     	        panel_hot_trend.getHeight() - padding
     	));
     	chartPanel.setBounds(
-    	        padding / 2, // Căn giữa chartPanel trong panel_hot_trend
+    	        padding / 2,
     	        padding / 2,
     	        panel_hot_trend.getWidth() - padding,
     	        panel_hot_trend.getHeight() - padding
     	);
 
-    	// Cập nhật panel_hot_trend
-    	panel_hot_trend.setLayout(null); // Sử dụng layout tự do để điều chỉnh kích thước
+    	panel_hot_trend.setLayout(null);
     	panel_hot_trend.add(chartPanel);
     	panel_hot_trend.revalidate();
     	panel_hot_trend.repaint();
     	
         return overallPanel;
     }
+    
+    private JPanel createRankingStaffPanel() {
+        // Tạo JPanel để chứa các JLabel
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-    private static DefaultCategoryDataset createDataset() {
+        // Lấy danh sách nhân viên từ service
+        ArrayList<RankingStaff> staffList = RatingCalculation.getListOfRatingStaff();
+
+        if (staffList == null || staffList.isEmpty()) {
+            JLabel noDataLabel = new JLabel("No staff data available.");
+            noDataLabel.setFont(new Font("Arial", Font.PLAIN, 18));
+            noDataLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panel.add(noDataLabel);
+        } else {
+            for (RankingStaff staff : staffList) {
+                // Tạo JLabel cho từng nhân viên
+                /* JLabel staffLabel = new JLabel(staff.getStaffName() + " - Total Sales: " + staff.getTotalSales());
+                staffLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+                panel.add(staffLabel); */
+            }
+        }
+
+        return panel;
+    }
+
+    private DefaultCategoryDataset createDataset() {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
         ArrayList<Dish> dishList = RatingCalculation.getListOfRatingDish();
 
@@ -608,7 +662,6 @@ public class ManagementSystem extends JFrame {
     	    public void itemStateChanged(ItemEvent e) {
     	        boolean isChecked = e.getStateChange() == ItemEvent.SELECTED;
     	        sortDish(DishDAO.handleSort(isChecked));
-    	        System.out.println("Danh sách bị thay đổi");
     	    }
     	});
     	
@@ -620,48 +673,48 @@ public class ManagementSystem extends JFrame {
     	panel_setting.setLayout(null);
     	
     	JLabel lbl_dish_id = new JLabel("Mã Món Ăn");
-    	lbl_dish_id.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_id.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_dish_id.setBounds(30, 11, 140, 33);
     	panel_setting.add(lbl_dish_id);
     	
     	tf_dish_id = new JTextField();
-    	tf_dish_id.setFont(new Font("Arial", Font.PLAIN, 14));
+    	tf_dish_id.setFont(new Font("Arial", Font.PLAIN, 16));
     	tf_dish_id.setColumns(10);
     	tf_dish_id.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
     	tf_dish_id.setBounds(180, 11, 140, 33);
     	panel_setting.add(tf_dish_id);
     	
     	tf_dish_name = new JTextField();
-    	tf_dish_name.setFont(new Font("Arial", Font.PLAIN, 14));
+    	tf_dish_name.setFont(new Font("Arial", Font.PLAIN, 16));
     	tf_dish_name.setColumns(10);
     	tf_dish_name.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
     	tf_dish_name.setBounds(180, 55, 140, 33);
     	panel_setting.add(tf_dish_name);
     	
     	JLabel lbl_dish_name = new JLabel("Tên Món Ăn");
-    	lbl_dish_name.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_name.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_dish_name.setBounds(30, 55, 140, 33);
     	panel_setting.add(lbl_dish_name);
     	
     	JLabel lbl_dish_category = new JLabel("Loại Món Ăn");
-    	lbl_dish_category.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_category.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_dish_category.setBounds(428, 11, 121, 33);
     	panel_setting.add(lbl_dish_category);
     	
     	JLabel lbl_dish_price = new JLabel("Giá");
-    	lbl_dish_price.setFont(new Font("Arial", Font.PLAIN, 14));
+    	lbl_dish_price.setFont(new Font("Arial", Font.PLAIN, 16));
     	lbl_dish_price.setBounds(30, 99, 140, 33);
     	panel_setting.add(lbl_dish_price);
     	
     	tf_dish_price = new JTextField();
-    	tf_dish_price.setFont(new Font("Arial", Font.PLAIN, 14));
+    	tf_dish_price.setFont(new Font("Arial", Font.PLAIN, 16));
     	tf_dish_price.setColumns(10);
     	tf_dish_price.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
     	tf_dish_price.setBounds(180, 99, 140, 33);
     	panel_setting.add(tf_dish_price);
     	
     	tf_dish_category = new JTextField();
-    	tf_dish_category.setFont(new Font("Arial", Font.PLAIN, 14));
+    	tf_dish_category.setFont(new Font("Arial", Font.PLAIN, 16));
     	tf_dish_category.setColumns(10);
     	tf_dish_category.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
     	tf_dish_category.setBounds(568, 11, 140, 33);
@@ -930,7 +983,7 @@ public class ManagementSystem extends JFrame {
 		return table_mode_show_table_for_menu;
 	}
     
-	public void sortDish(List<Dish> dishes) {
+	private void sortDish(List<Dish> dishes) {
 		// Xóa tất cả dữ liệu hiện tại trong bảng
 		Dish_table_model.setRowCount(0);
 
@@ -987,16 +1040,13 @@ public class ManagementSystem extends JFrame {
     	Dish dish = DishDAO.getDish(dishId);
     	String newName = dish.getDishName();
     	
-        // Tìm JPanel chứa món ăn
         if (dishPanels.containsKey(dishId)) {
             JPanel dishPanel = dishPanels.get(dishId);
             
-            // Duyệt qua các thành phần trong JPanel để tìm JLabel hiển thị tên món ăn
             for (Component component : dishPanel.getComponents()) {
                 if (component instanceof JLabel) {
                     JLabel lblDishName = (JLabel) component;
-
-                    // Kiểm tra nếu JLabel là tên món ăn (thường không có ảnh)
+                    
                     if (lblDishName.getText().startsWith("Món")) {
                         lblDishName.setText(newName);
 
@@ -1013,18 +1063,14 @@ public class ManagementSystem extends JFrame {
     }
 
     private void updateDishImage(String dishId, String newImagePath) {
-        // Tìm JPanel chứa món ăn
         if (dishPanels.containsKey(dishId)) {
             JPanel dishPanel = dishPanels.get(dishId);
             
-            // Duyệt qua các thành phần trong JPanel để tìm JLabel chứa ảnh
             for (Component component : dishPanel.getComponents()) {
                 if (component instanceof JLabel) {
                     JLabel lblDishImage = (JLabel) component;
 
-                    // Kiểm tra nếu JLabel hiện tại chứa hình ảnh
                     if (lblDishImage.getIcon() != null || lblDishImage.getText().equals("Không có ảnh")) {
-                        // Cập nhật ảnh mới
                         setDishImage(lblDishImage, newImagePath);
                         
                         // Làm mới giao diện
@@ -1119,7 +1165,7 @@ public class ManagementSystem extends JFrame {
         }
     }
 
-    public void loadDish() {
+    private void loadDish() {
     	DishDAO.loadData();
 		for(Dish dish : DishDAO.list) {
 	        Object[] newRow = {dish.getDishID(), dish.getDishName(), dish.getDishPrice(), dish.getDishCategory()};
@@ -1127,7 +1173,7 @@ public class ManagementSystem extends JFrame {
 		}
     }
     
-    public void addDish() {
+    private void addDish() {
         JTextField tfDishID = new JTextField();
         JTextField tfDishName = new JTextField();
         JTextField tfPrice = new JTextField();
@@ -1180,7 +1226,7 @@ public class ManagementSystem extends JFrame {
         }
     }
 
-    public void editDish() {
+    private void editDish() {
         int selectedRow = DishTable.getSelectedRow();
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để sửa!");
@@ -1255,12 +1301,12 @@ public class ManagementSystem extends JFrame {
 	}
     
     // Phương thức xóa hàng trong bảng
-	public void deleteDish() {
+    private void deleteDish() {
 		int selectedRow = DishTable.getSelectedRow();
 
 		String dishID = DishTable.getValueAt(selectedRow, 0).toString();
 
-		// Gọi phương thức xóa hàng hóa trong Class DAO
+		// Gọi phương thức xóa món ăn trong Class DAO
 		boolean success = DishDAO.deleteDish(dishID);
 
 		if (success) {
@@ -1271,7 +1317,7 @@ public class ManagementSystem extends JFrame {
 		}
 	}
     
-    public void addImage() {
+	private void addImage() {
         int selectedRow = DishTable.getSelectedRow();
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(null, "Vui lòng chọn một món ăn để thêm ảnh!");
@@ -1342,16 +1388,24 @@ public class ManagementSystem extends JFrame {
     }
     
     private JPanel createFloorPanel() {
-    	JPanel floorPanel = new JPanel();
+    	floorPanel = new JPanel();
     	floorPanel.setBackground(new Color(255, 255, 255));
     	floorPanel.setLayout(null);
     	
-    	JPanel panel_filter = new JPanel();
-    	panel_filter.setBackground(new Color(255, 255, 255));
-    	panel_filter.setBounds(38, 22, 160, 166);
-    	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-    	floorPanel.add(panel_filter);
-    	panel_filter.setLayout(null);
+    	panel_image = new JPanel();
+    	panel_image.setBackground(new Color(255, 255, 255));
+    	panel_image.setBounds(38, 22, 160, 166);
+    	panel_image.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	floorPanel.add(panel_image);
+    	panel_image.setLayout(null);
+    	
+    	lbl_table_image = new JLabel("Trống");
+    	lbl_table_image.setBounds(10, 11, 140, 144);
+    	panel_image.add(lbl_table_image);
+    	
+    	lbl_table_image.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_table_image.setForeground(Color.BLACK);
+    	lbl_table_image.setFont(new Font("Arial", Font.PLAIN, 16));
     	
     	lbl_switch_grip = new RoundedLabel("Chế độ hiển thị lưới");
     	lbl_switch_grip.setHorizontalAlignment(SwingConstants.CENTER);
@@ -1441,7 +1495,7 @@ public class ManagementSystem extends JFrame {
     		}
 		});
     	
-    	JPanel panel_setting = new JPanel();
+    	panel_setting = new JPanel();
     	panel_setting.setBackground(new Color(255, 255, 255));
     	panel_setting.setBounds(233, 34, 1009, 143);
     	panel_setting.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
@@ -1545,6 +1599,28 @@ public class ManagementSystem extends JFrame {
     		public void mousePressed(MouseEvent e) {
     			lbl_remove.setForeground(Color.WHITE);
     			lbl_remove.setBackground(new Color(176, 42, 55));
+
+    			Table table = TableDAO.getTable(FloorSelected);
+    			int selectedRow = FloorTable.getSelectedRow();
+    	        
+    	        // Kiểm tra dòng được chọn
+    	        if (selectedRow >= 0) {
+    	        	int confirm = JOptionPane.showConfirmDialog(
+    	                    null, 
+    	                    "Bạn có chắc chắn muốn xóa bàn có mã  " + table.getTableID() + "?", 
+    	                    "Xác nhận xóa",
+    	                    JOptionPane.YES_NO_OPTION
+    	                );
+    	                if (confirm == JOptionPane.YES_OPTION) {
+    	                    deleteTable();
+    	                }
+    	        } else {
+    	            JOptionPane.showMessageDialog(null, "Vui lòng chọn một bàn để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+    	        }
+    	        
+                // Làm mới giao diện
+                floorPanel.revalidate();
+                floorPanel.repaint();	
     		}
     		
     		@Override
@@ -1615,6 +1691,7 @@ public class ManagementSystem extends JFrame {
     		public void mousePressed(MouseEvent e) {
     			lbl_assign_staff.setForeground(Color.WHITE);
     			lbl_assign_staff.setBackground(new Color(105, 105, 105));
+    			changeStaffRes();
     		}
     		
     		@Override
@@ -1819,22 +1896,82 @@ public class ManagementSystem extends JFrame {
 		FloorTable.setRowHeight(30);
     	
 		FloorTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) {
-                    int selectedRow = FloorTable.getSelectedRow();
-                    if (selectedRow != -1) {
-                        tf_tableNum.setText(FloorTable.getValueAt(selectedRow, 0).toString());
-                        tf_floorStay.setText(FloorTable.getValueAt(selectedRow, 1).toString());
-                        tf_status.setText(FloorTable.getValueAt(selectedRow, 2).toString());
-                        tf_Respond.setText(FloorTable.getValueAt(selectedRow, 3).toString());
-                        tf_clientNum.setText(FloorTable.getValueAt(selectedRow, 4).toString());
-                        
-                        FloorSelected = FloorTable.getValueAt(selectedRow, 0).toString();
-                    }
-                }
-            }
-        });
+		    @Override
+		    public void valueChanged(ListSelectionEvent e) {
+		        if (!e.getValueIsAdjusting()) {
+		            int selectedRow = FloorTable.getSelectedRow();
+		            if (selectedRow != -1) {
+		                // Lấy dữ liệu từ bảng
+		                tf_tableNum.setText(FloorTable.getValueAt(selectedRow, 0).toString());
+		                tf_floorStay.setText(FloorTable.getValueAt(selectedRow, 1).toString());
+		                tf_status.setText(FloorTable.getValueAt(selectedRow, 2).toString());
+		                tf_Respond.setText(FloorTable.getValueAt(selectedRow, 3) != null ? FloorTable.getValueAt(selectedRow, 3).toString() : "");
+		                tf_clientNum.setText(FloorTable.getValueAt(selectedRow, 4).toString());
+
+		                String tableID = FloorTable.getValueAt(selectedRow, 0).toString();
+		                String tableStatus = FloorTable.getValueAt(selectedRow, 2).toString();
+
+		                String imagePath = "src/icon/icons8-table-100.png";
+		                String basePath = System.getProperty("user.dir");
+		                File imageFile = new File(basePath, imagePath);
+
+		                panel_image.removeAll();
+
+		                JPanel innerPanel = new JPanel();
+		                innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.Y_AXIS));
+		                innerPanel.setBackground(panel_image.getBackground());
+
+		                JLabel lblTableID = new JLabel("Mã bàn: " + tableID, SwingConstants.CENTER);
+		                lblTableID.setFont(new Font("Arial", Font.BOLD, 16));
+
+		                JLabel lblTableStatus = new JLabel(tableStatus, SwingConstants.CENTER);
+		                lblTableStatus.setFont(new Font("Arial", Font.PLAIN, 15));
+		                lblTableStatus.setForeground(new Color(40, 167, 69));
+
+		                if (imageFile.exists()) {
+		                    lbl_table_image.setText("");
+		                    ImageIcon imageIcon = new ImageIcon(imageFile.getAbsolutePath());
+		                    lbl_table_image.setIcon(imageIcon);
+		                    lbl_table_image.setHorizontalAlignment(SwingConstants.CENTER); // Căn giữa hình ảnh
+		                } else {
+		                    lbl_table_image.setText("Ảnh không tồn tại");
+		                    lbl_table_image.setIcon(null);
+		                    lbl_table_image.setHorizontalAlignment(SwingConstants.CENTER); // Căn giữa thông báo
+		                }
+
+		                lblTableID.setAlignmentX(Component.CENTER_ALIGNMENT);
+		                lbl_table_image.setAlignmentX(Component.CENTER_ALIGNMENT);
+		                lblTableStatus.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		                innerPanel.add(lblTableID);   // Mã bàn ở trên
+		                innerPanel.add(Box.createVerticalStrut(10)); // Khoảng cách giữa các thành phần
+		                innerPanel.add(lbl_table_image); // Hình ảnh ở giữa
+		                innerPanel.add(Box.createVerticalStrut(10)); // Khoảng cách giữa hình ảnh và trạng thái
+		                innerPanel.add(lblTableStatus);  // Trạng thái ở dưới
+
+		                // Thiết lập kích thước cho innerPanel
+		                panel_image.setLayout(null); // Sử dụng layout null để điều chỉnh kích thước tự do
+		                int padding = 5; // Kích thước thu nhỏ
+		                innerPanel.setBounds(
+		                    padding, 
+		                    padding, 
+		                    panel_image.getWidth() - 2 * padding, 
+		                    panel_image.getHeight() - 2 * padding
+		                );
+		                
+		                panel_image.add(innerPanel);
+
+		                // Làm mới giao diện
+		                panel_image.revalidate();
+		                panel_image.repaint();
+
+		                // Lưu mã bàn đã chọn
+		                FloorSelected = tableID;
+		            }
+		        }
+		    }
+		});
+
 		
 		table_mode_show_table.setViewportView(FloorTable);
 		loadFloor();
@@ -1983,7 +2120,7 @@ private JPanel switchGripModeFloor2() {
         floor2.add(Table);
     }
     
-    public void loadFloor() {
+    private void loadFloor() {
     	TableDAO.loadData();
 		for(Table table : TableDAO.list) {
 	        Object[] newRow = {table.getTableID(), table.getFloorStay(), table.getOperatingStatus(), table.getResponsibleBy(), table.getClientNum()};
@@ -1991,7 +2128,7 @@ private JPanel switchGripModeFloor2() {
 		}
     }
     
-    public void addTable() {
+    private void addTable() {
         JTextField tfTableID = new JTextField("#T");
         JTextField tfFloor = new JTextField();
         JTextField tfStatus = new JTextField("Đang chuẩn bị");
@@ -2044,48 +2181,393 @@ private JPanel switchGripModeFloor2() {
         }
     }
     
-    private JPanel createEmployeePanel() {
-    	JPanel employeePanel = new JPanel();
-    	employeePanel.setBackground(new Color(255, 255, 255));
-    	employeePanel.setLayout(null);
+    // Phương thức xóa hàng trong bảng
+ 	private void deleteTable() {
+ 		int selectedRow = FloorTable.getSelectedRow();
+
+ 		String tableID = FloorTable.getValueAt(selectedRow, 0).toString();
+
+ 		// Gọi phương thức xóa bàn trong Class DAO
+ 		boolean success = TableDAO.deleteTable(tableID);
+
+ 		if (success) {
+ 			// Nếu xóa thành công, xóa dòng trong bảng
+ 			Floor_table_model.removeRow(selectedRow);
+ 		} else {
+ 			JOptionPane.showMessageDialog(null, "Xóa bàn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
+ 		}
+ 	}
+    
+ 	// Phương thức thay đổi nhân viên phụ trách
+ 	private void changeStaffRes() {
+ 	    // Kiểm tra người dùng có chọn hàng trong JTable hay không
+ 	    int selectedRow = FloorTable.getSelectedRow();
+ 	    if (selectedRow == -1) {
+ 	        JOptionPane.showMessageDialog(null, "Vui lòng chọn một hàng trong bảng!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+ 	        return;
+ 	    }
+
+ 	    // Tạo JDialog để chọn nhân viên
+ 	    JDialog dialog = new JDialog((Frame) null, "Chọn Nhân Viên", true);
+ 	    dialog.setLayout(new GridBagLayout());
+ 	    dialog.setSize(300, 200);
+ 	    dialog.setLocationRelativeTo(null); // Hiển thị ở giữa màn hình
+
+ 	    // Tạo JLabel cho hướng dẫn
+ 	    JLabel label = new JLabel("Chọn nhân viên:");
+ 	    label.setFont(new Font("Dialog", Font.PLAIN, 15));
+ 	    GridBagConstraints gbc = new GridBagConstraints();
+ 	    gbc.gridx = 0;
+ 	    gbc.gridy = 0;
+ 	    gbc.anchor = GridBagConstraints.WEST;
+ 	    gbc.insets = new Insets(10, 10, 5, 10);
+ 	    dialog.add(label, gbc);
+
+ 	    // Tạo JComboBox với các tùy chọn nhân viên
+ 	    String[] staffOptions = {"Nhân viên A", "Nhân viên B", "Nhân viên C"};
+ 	    JComboBox<String> comboBox = new JComboBox<>(staffOptions);
+ 	    comboBox.setFont(new Font("Dialog", Font.PLAIN, 15));
+ 	    comboBox.setBackground(Color.WHITE);
+ 	    comboBox.setForeground(Color.BLACK);
+ 	    comboBox.setSelectedItem(FloorTable.getValueAt(selectedRow, 3)); // Hiển thị giá trị hiện tại
+ 	    gbc.gridx = 0;
+ 	    gbc.gridy = 1;
+ 	    gbc.fill = GridBagConstraints.HORIZONTAL;
+ 	    gbc.insets = new Insets(5, 10, 10, 10);
+ 	    dialog.add(comboBox, gbc);
+
+ 	    // Tạo nút xác nhận
+ 	    JButton confirmButton = new JButton("Xác nhận");
+ 	    confirmButton.setFont(new Font("Dialog", Font.PLAIN, 15));
+ 	    gbc.gridx = 0;
+ 	    gbc.gridy = 2;
+ 	    gbc.fill = GridBagConstraints.NONE;
+ 	    gbc.insets = new Insets(10, 10, 10, 10);
+ 	    gbc.anchor = GridBagConstraints.CENTER;
+ 	    dialog.add(confirmButton, gbc);
+
+ 	    // Xử lý sự kiện khi nhấn nút xác nhận
+ 	    confirmButton.addActionListener(e -> {
+ 	        String selectedStaff = (String) comboBox.getSelectedItem();
+ 	        if (selectedStaff != null) {
+ 	            // Cập nhật giá trị vào JTable
+ 	            FloorTable.setValueAt(selectedStaff, selectedRow, 3); // Cột 3 là cột giá trị nhân viên
+ 	            tf_Respond.setText(selectedStaff); // Hiển thị giá trị mới trong TextField
+ 	        }
+ 	        dialog.dispose(); // Đóng dialog sau khi xác nhận
+ 	    });
+
+ 	    // Hiển thị dialog
+ 	    dialog.setVisible(true);
+ 	}
+ 	
+    // Làm màu
+	class FlippableLabel extends JLabel {
+	    private boolean isFlipped = false;
+
+	    public FlippableLabel(String text, int horizontalAlignment) {
+	        super(text, horizontalAlignment);
+	    }
+
+	    @Override
+	    protected void paintComponent(Graphics g) {
+	        Graphics2D g2d = (Graphics2D) g;
+	        AffineTransform original = g2d.getTransform();
+
+	        int offsetY = 15;
+
+	        if (isFlipped) {
+	            g2d.translate(getWidth() / 2, getHeight() / 2 - offsetY);
+	            g2d.scale(1, -1);
+	            g2d.translate(-getWidth() / 2, -getHeight() / 2);
+	        }
+
+	        super.paintComponent(g);
+	        g2d.setTransform(original);
+	    }
+
+	    public void toggleFlip() {
+	        isFlipped = !isFlipped;
+	    }
+	}
+    
+    private JPanel createReceiptPanel() {
+    	JPanel receiptPanel = new JPanel();
+    	receiptPanel.setBackground(new Color(255, 255, 255));
+    	receiptPanel.setLayout(null);
+    	
+    	JPanel panel_filter = new JPanel();
+    	panel_filter.setLayout(null);
+    	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_filter.setBackground(Color.WHITE);
+    	panel_filter.setBounds(34, 208, 222, 90);
+    	receiptPanel.add(panel_filter);
+    	
+    	JLabel lbl_filter_title = new JLabel("Lọc");
+    	lbl_filter_title.setFont(new Font("Dialog", Font.BOLD, 16));
+    	lbl_filter_title.setBounds(10, 11, 43, 21);
+    	panel_filter.add(lbl_filter_title);
+    	
+    	JCheckBox check_recent_payment = new JCheckBox("Thanh toán gần đây");
+    	check_recent_payment.setFont(new Font("Dialog", Font.PLAIN, 15));
+    	check_recent_payment.setOpaque(false); // Làm trong suốt
+    	check_recent_payment.setBounds(20, 43, 167, 23);
+    	panel_filter.add(check_recent_payment);
+
+        // Tạo FlippableLabel 1
+        FlippableLabel lbl_down_up_1 = new FlippableLabel("^", SwingConstants.CENTER);
+        lbl_down_up_1.setBounds(10, 10, 50, 30);
+        lbl_down_up_1.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                lbl_down_up_1.toggleFlip();
+                lbl_down_up_1.repaint();
+
+                int targetHeight = isPanelResized_1 ? 90 : 43; // Kích thước mục tiêu
+                AnimatedMoving.animateResize(panel_filter, panel_filter.getHeight(), targetHeight, (currentHeight) -> {
+                    panel_filter.setBounds(34, isPanelResized_2 ? 136 : 208, 222, currentHeight);
+                });
+
+                isPanelResized_1 = !isPanelResized_1;
+            }
+        });
+    	
+    	lbl_down_up_1.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_down_up_1.setFont(new Font("Viner Hand ITC", Font.PLAIN, 19));
+    	lbl_down_up_1.setBounds(173, 18, 49, 23);
+    	panel_filter.add(lbl_down_up_1);
+    	
+    	JPanel panel_status = new JPanel();
+    	panel_status.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_status.setBackground(Color.WHITE);
+    	panel_status.setBounds(34, 69, 222, 113);
+    	receiptPanel.add(panel_status);
+    	panel_status.setLayout(null);
+    	
+    	JLabel lbl_status_title = new JLabel("Trạng thái");
+    	lbl_status_title.setFont(new Font("Dialog", Font.BOLD, 16));
+    	lbl_status_title.setBounds(10, 11, 84, 21);
+    	panel_status.add(lbl_status_title);
+    	
+    	JCheckBox check_done = new JCheckBox("Hoàn thành");
+    	check_done.setFont(new Font("Dialog", Font.PLAIN, 15));
+    	check_done.setOpaque(false); // Làm trong suốt
+    	check_done.setBounds(20, 43, 110, 23);
+    	panel_status.add(check_done);
+    	
+    	JCheckBox check_not_done = new JCheckBox("Chưa hoàn thành");
+    	check_not_done.setFont(new Font("Dialog", Font.PLAIN, 15));
+    	check_not_done.setOpaque(false); // Làm trong suốt
+    	check_not_done.setBounds(20, 69, 150, 23);
+    	panel_status.add(check_not_done);
+    	
+        // Tạo FlippableLabel 2
+        FlippableLabel lbl_down_up_2 = new FlippableLabel("^", SwingConstants.CENTER);
+        lbl_down_up_2.setBounds(10, 50, 50, 30);
+        lbl_down_up_2.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                lbl_down_up_2.toggleFlip();
+                lbl_down_up_2.repaint();
+
+                int targetHeight = isPanelResized_2 ? 113 : 43; // Kích thước mục tiêu
+                int targetY = isPanelResized_2 ? 208 : 136;    // Vị trí Y mục tiêu của panel_filter
+
+                AnimatedMoving.animateResize(panel_status, panel_status.getHeight(), targetHeight, (currentHeight) -> {
+                    panel_status.setBounds(34, 69, 222, currentHeight);
+                });
+
+                AnimatedMoving.animateMove(panel_filter, panel_filter.getY(), targetY, (currentY) -> {
+                    panel_filter.setBounds(34, currentY, 222, isPanelResized_1 ? 43 : 90);
+                });
+
+                isPanelResized_2 = !isPanelResized_2;
+            }
+        });
+        
+    	lbl_down_up_2.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_down_up_2.setFont(new Font("Viner Hand ITC", Font.PLAIN, 19));
+    	lbl_down_up_2.setBounds(173, 18, 49, 23);
+    	panel_status.add(lbl_down_up_2);
+
+    	JLabel lbl_receipt = new JLabel("Hóa đơn");
+    	lbl_receipt.setFont(new Font("Dialog", Font.BOLD, 23));
+    	lbl_receipt.setBounds(34, 0, 107, 64);
+    	receiptPanel.add(lbl_receipt);
+    	
+    	RoundedLabel lbl_export = new RoundedLabel("Xuất thành file Excel");
+    	lbl_export.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_export.setForeground(Color.BLACK);
+    	lbl_export.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_export.setCornerRadius(10);
+    	lbl_export.setBackground(new Color(129, 199, 132));
+    	lbl_export.setBounds(1080, 15, 164, 41);
+    	receiptPanel.add(lbl_export);
+    	
+    	lbl_export.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_export.setForeground(Color.WHITE);
+    			lbl_export.setBackground(new Color(40, 167, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_export.setForeground(Color.BLACK);
+    			lbl_export.setBackground(new Color(129, 199, 132));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_export.setForeground(Color.WHITE);
+    			lbl_export.setBackground(new Color(33, 136, 56));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_export.setForeground(Color.WHITE);
+    			lbl_export.setBackground(new Color(40, 167, 69));
+    		}
+		});
+    	
+    	RoundedLabel lbl_add = new RoundedLabel("+  Thêm mới");
+    	lbl_add.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_add.setForeground(Color.BLACK);
+    	lbl_add.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_add.setCornerRadius(10);
+    	lbl_add.setBackground(new Color(129, 199, 132));
+    	lbl_add.setBounds(930, 15, 130, 41);
+    	receiptPanel.add(lbl_add);
+    	
+    	lbl_add.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_add.setForeground(Color.BLACK);
+    			lbl_add.setBackground(new Color(129, 199, 132));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(33, 136, 56));
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+		});
+    	
+    	JScrollPane scrollpane_show_table = new JScrollPane();
+    	scrollpane_show_table.setBounds(286, 69, 962, 450);
+    	receiptPanel.add(scrollpane_show_table);
+    	
+    	Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
+    	scrollpane_show_table.setBorder(roundedBorder);
+    	
+    	ReceiptSelected = null;
+    	
+    	Receipt_table_mode = new DefaultTableModel(
+				new Object[][] {
+				},
+				new String[] {
+					"Mã Hoá Đơn", "Trạng Thái Thanh Toán", "Thời Gian", "Tổng Tiền"
+				}
+			);
+		
+    	ReceiptTable = new JTable();
+    	ReceiptTable.setModel(Receipt_table_mode);
+    	ReceiptTable.getTableHeader().setReorderingAllowed(false);
+    	ReceiptTable.setFont(new Font("Arial", Font.PLAIN, 20));
+    	ReceiptTable.getColumnModel().getColumn(0).setPreferredWidth(100);
+    	ReceiptTable.getColumnModel().getColumn(1).setPreferredWidth(250);
+    	ReceiptTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+    	ReceiptTable.getColumnModel().getColumn(3).setPreferredWidth(150);
+		Font headerFont = new Font("Arial", Font.BOLD, 18);
+		ReceiptTable.getTableHeader().setPreferredSize(new Dimension(ReceiptTable.getTableHeader().getWidth(), 30));
+		ReceiptTable.getTableHeader().setFont(headerFont);
+		ReceiptTable.setRowHeight(30);
+    	
+//		ReceiptTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+//            @Override
+//            public void valueChanged(ListSelectionEvent e) {
+//                if (!e.getValueIsAdjusting()) {
+//                    int selectedRow = ReceiptTable.getSelectedRow();
+//                    if (selectedRow != -1) {
+//                        tf_employee_id.setText(ReceiptTable.getValueAt(selectedRow, 0).toString());
+//                        tf_employee_name.setText(ReceiptTable.getValueAt(selectedRow, 1).toString());
+//                        tf_gender.setText(ReceiptTable.getValueAt(selectedRow, 2).toString());
+//                        tf_phone_num.setText(ReceiptTable.getValueAt(selectedRow, 3).toString());
+//                        
+//                        ReceiptSelected = ReceiptTable.getValueAt(selectedRow, 0).toString();
+//                    }
+//                }
+//            }
+//        });
+		
+		scrollpane_show_table.setViewportView(ReceiptTable);
+		loadReceipt();
+    	
+        return receiptPanel;
+    }
+
+    private void loadReceipt() {
+    	BillDAO.loadData();
+		for(Bill bill : BillDAO.list) {
+	        Object[] newRow = {bill.getBillID(), bill.isWasPay(), bill.getTime(), bill.getPayment()};
+	        Receipt_table_mode.addRow(newRow);
+		}
+    }
+    
+    private JPanel createStaffPanel() {
+    	JPanel staffPanel = new JPanel();
+    	staffPanel.setBackground(new Color(255, 255, 255));
+    	staffPanel.setLayout(null);
     	
     	JPanel panel_filter = new JPanel();
     	panel_filter.setBackground(new Color(255, 255, 255));
     	panel_filter.setBounds(38, 34, 143, 143);
     	panel_filter.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-    	employeePanel.add(panel_filter);
+    	staffPanel.add(panel_filter);
     	panel_filter.setLayout(null);
     	
     	JPanel panel_setting = new JPanel();
     	panel_setting.setBackground(new Color(255, 255, 255));
     	panel_setting.setBounds(233, 34, 1009, 143);
     	panel_setting.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-    	employeePanel.add(panel_setting);
+    	staffPanel.add(panel_setting);
     	panel_setting.setLayout(null);
     	
-    	JLabel lbl_employee_id = new JLabel("Mã Nhân Viên");
-    	lbl_employee_id.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_employee_id.setBounds(24, 11, 121, 33);
-    	panel_setting.add(lbl_employee_id);
+    	JLabel lbl_staff_id = new JLabel("Mã Nhân Viên");
+    	lbl_staff_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_staff_id.setBounds(24, 11, 121, 33);
+    	panel_setting.add(lbl_staff_id);
     	
-    	JLabel lbl_employee_name = new JLabel("Tên Nhân Viên");
-    	lbl_employee_name.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_employee_name.setBounds(24, 55, 121, 33);
-    	panel_setting.add(lbl_employee_name);
+    	JLabel lbl_staff_name = new JLabel("Tên Nhân Viên");
+    	lbl_staff_name.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_staff_name.setBounds(24, 55, 121, 33);
+    	panel_setting.add(lbl_staff_name);
     	
-    	tf_employee_id = new JTextField();
-    	tf_employee_id.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_employee_id.setBounds(155, 11, 168, 33);
-    	tf_employee_id.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	panel_setting.add(tf_employee_id);
-    	tf_employee_id.setColumns(10);
+    	tf_staff_id = new JTextField();
+    	tf_staff_id.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_staff_id.setBounds(155, 11, 168, 33);
+    	tf_staff_id.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	panel_setting.add(tf_staff_id);
+    	tf_staff_id.setColumns(10);
     	
-    	tf_employee_name = new JTextField();
-    	tf_employee_name.setFont(new Font("Arial", Font.PLAIN, 16));
-    	tf_employee_name.setColumns(10);
-    	tf_employee_name.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    	tf_employee_name.setBounds(155, 55, 168, 33);
-    	panel_setting.add(tf_employee_name);
+    	tf_staff_name = new JTextField();
+    	tf_staff_name.setFont(new Font("Arial", Font.PLAIN, 16));
+    	tf_staff_name.setColumns(10);
+    	tf_staff_name.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    	tf_staff_name.setBounds(155, 55, 168, 33);
+    	panel_setting.add(tf_staff_name);
     	
     	JLabel lbl_gender = new JLabel("Giới Tính");
     	lbl_gender.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -2221,7 +2703,7 @@ private JPanel switchGripModeFloor2() {
     	
     	JScrollPane scrollpane_show_table = new JScrollPane();
     	scrollpane_show_table.setBounds(38, 224, 1204, 298);
-    	employeePanel.add(scrollpane_show_table);
+    	staffPanel.add(scrollpane_show_table);
     	
     	Border roundedBorder = new LineBorder(Color.GRAY, 2, true);
     	scrollpane_show_table.setBorder(roundedBorder);
@@ -2256,8 +2738,8 @@ private JPanel switchGripModeFloor2() {
                 if (!e.getValueIsAdjusting()) {
                     int selectedRow = StaffTable.getSelectedRow();
                     if (selectedRow != -1) {
-                        tf_employee_id.setText(StaffTable.getValueAt(selectedRow, 0).toString());
-                        tf_employee_name.setText(StaffTable.getValueAt(selectedRow, 1).toString());
+                        tf_staff_id.setText(StaffTable.getValueAt(selectedRow, 0).toString());
+                        tf_staff_name.setText(StaffTable.getValueAt(selectedRow, 1).toString());
                         tf_gender.setText(StaffTable.getValueAt(selectedRow, 2).toString());
                         tf_phone_num.setText(StaffTable.getValueAt(selectedRow, 3).toString());
                         tf_position.setText(StaffTable.getValueAt(selectedRow, 4).toString());
@@ -2269,20 +2751,19 @@ private JPanel switchGripModeFloor2() {
         });
 		
 		scrollpane_show_table.setViewportView(StaffTable);
-		loadEmployee();
-    	return employeePanel;
+		loadStaff();
+    	return staffPanel;
     }
     
-    public void loadEmployee() {
-		ArrayList<Employee> list = EmployeeDAO.getInstance().loadEmployee();
-		Emp_table_model.setRowCount(0);
-		for(Employee employee : list) {
-	        Object[] newRow = {employee.getEmployee_id(), employee.getEmployee_name(), employee.getGender(), employee.getPhone_num(), employee.getPosition()};
+    private void loadStaff() {
+		StaffDAO.loadData();
+		for(Staff staff : StaffDAO.list) {
+	        Object[] newRow = {staff.getStaffID(), staff.getFullName(), staff.getSex(), staff.getPhone(), staff.getPosition()};
 	        Emp_table_model.addRow(newRow);
 		}
     }
     
-    public void addEmployee() {
+    private void addEmployee() {
         JTextField tfEmpID = new JTextField("UA - ");
         JTextField tfEmpName = new JTextField();
         JTextField tfGender = new JTextField();
@@ -2317,10 +2798,15 @@ private JPanel switchGripModeFloor2() {
             String phoneNum = tfPhoneNum.getText().trim().isEmpty() ? null : tfPhoneNum.getText().trim();
             String Pos = tfPos.getText().trim().isEmpty() ? null : tfPos.getText().trim();
 
+            // Dữ liệu Demo
+            String userName = "";
+            String password = "";
+            Time startShift = null;
+            Time endShift = null;
             try {
-                Employee employee = new Employee(empID, empName, gender, phoneNum, Pos);
-                EmployeeDAO.addEmployee(employee);
-                Object[] newRow = {employee.getEmployee_id(), employee.getEmployee_name(), employee.getGender(), employee.getPhone_num(), employee.getPosition()};
+                Staff staff = new Staff(empID, userName, password, empName, gender, phoneNum, Pos, startShift, endShift);
+                StaffDAO.addStaff(staff);
+                Object[] newRow = {staff.getStaffID(), staff.getFullName(), staff.getSex(), staff.getPhone(), staff.getPosition()};
                 Emp_table_model.addRow(newRow);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
@@ -2328,7 +2814,7 @@ private JPanel switchGripModeFloor2() {
         }
     }
 
-    public void editEmployee() {
+    private void editEmployee() {
         int selectedRow = StaffTable.getSelectedRow();
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(null, "Vui lòng chọn một nhân viên để sửa!");
@@ -2379,20 +2865,28 @@ private JPanel switchGripModeFloor2() {
             String phone = tfPhoneNum.getText().trim().isEmpty() ? null : tfPhoneNum.getText().trim();
             String pos = tfPos.getText().trim().isEmpty() ? null : tfPos.getText().trim();
 
+            // Dữ liệu Demo
+            String userName = "";
+            String password = "";
+            Time startShift = null;
+            Time endShift = null;
+            
+            Staff currentStaff = new Staff(currentEmpID, userName, password, currentEmpName, currentGender, currentPhoneNum, currentPos, startShift, endShift);
             try {
-                Employee employee = new Employee(empID, name, gender, phone, pos);
-                EmployeeDAO.updateEmployee(employee);
-                Emp_table_model.setValueAt(employee.getEmployee_name(), selectedRow, 1);
-                Emp_table_model.setValueAt(employee.getGender(), selectedRow, 2);
-                Emp_table_model.setValueAt(employee.getPhone_num(), selectedRow, 3);
-                Emp_table_model.setValueAt(employee.getPosition(), selectedRow, 4);
+                Staff newStaff = new Staff(empID, userName, password, name, gender, phone, pos, startShift, endShift);
+                if (StaffDAO.updateStaff(currentStaff, newStaff)) {
+                	Emp_table_model.setValueAt(newStaff.getFullName(), selectedRow, 1);
+                	Emp_table_model.setValueAt(newStaff.getSex(), selectedRow, 2);
+                	Emp_table_model.setValueAt(newStaff.getPhone(), selectedRow, 3);
+                	Emp_table_model.setValueAt(newStaff.getPosition(), selectedRow, 4);
+                }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
             }
         }
     }
 
-    public void deleteEmployee() {
+    private void deleteEmployee() {
         int selectedRow = StaffTable.getSelectedRow();
         
         // Kiểm tra nếu có dòng được chọn
@@ -2400,7 +2894,7 @@ private JPanel switchGripModeFloor2() {
             String empID = StaffTable.getValueAt(selectedRow, 0).toString(); // Lấy mã nhân viên từ cột đầu tiên
             
             // Gọi phương thức xóa nhân viên trong cơ sở dữ liệu
-            boolean success = EmployeeDAO.deleteEmployee(empID);
+            boolean success = StaffDAO.deleteStaff(empID);
             
             if (success) {
                 // Nếu xóa thành công, xóa dòng trong bảng

@@ -7,15 +7,18 @@ public class Bill {
 	private boolean wasPay;
 	private Date time;
 
-	public Bill(String billID, boolean wasPay, Date time) {
+	private double payment;
+
+	public Bill(String billID, boolean wasPay, Date time, double payment) {
 		super();
 		this.billID = billID;
 		this.wasPay = wasPay;
 		this.time = time;
+		this.payment = payment;
 	}
 	
-	
-	
+	public double getPayment() {return payment;}
+	public void setPayment(double payment) {this.payment = payment;}
 	public String getBillID() {
 		return billID;
 	}

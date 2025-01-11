@@ -86,7 +86,7 @@ public class Payment {
             storeDetailReceipt(conn, detailBill);
 
             // Stored ranking staff
-            updateRankings(table.getResponsibleBy(), (int) totalPrice / 10);
+            updateRankings(table.getResponsibleBy(), ((int) totalPrice) / 10);
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -18,10 +18,8 @@ public class RatingCalculation {
     public static ArrayList<RankingStaff> getListOfRankingStaff() {
         ArrayList<RankingStaff> ans = new ArrayList<>();
 
-        ResultSet rs = loadDataRankingStaff();
-
-        try {
-
+        try (ResultSet rs = loadDataRankingStaff()) {
+            if (rs == null) return null;
             while(rs.next()) {
                 RankingStaff rankingStaff = new RankingStaff(rs.getString("staffID"), rs.getInt("rating"));
                 ans.add(rankingStaff);
@@ -45,10 +43,8 @@ public class RatingCalculation {
         ArrayList<Dish> ans = new ArrayList<>();
         ArrayList<DetailReceipt> detailReceiptArrayList = new ArrayList<>();
 
-        ResultSet rs = loadDataDishThisWeek();
-        if (rs == null) return null;
-
-        try {
+        try (ResultSet rs = loadDataDishThisWeek()) {
+            if (rs == null) return null;
             while(rs.next()) {
                 detailReceiptArrayList.add(new DetailReceipt(
                         rs.getString("dishID"),
@@ -102,6 +98,40 @@ public class RatingCalculation {
     }
 
     /**
+     * Hàm truy vấn tổng doanh thu trong tuần
+     *
+     * Hàm truy vấn database và trả về tổng số tiền đã bán được trong tuần này
+     *
+     * @return ans là kết quả truy vấn
+     */
+    public static double getRevenueInWeek() {
+        String sql = "SELECT SUM(payment) AS total_payment " +
+                "FROM bill " +
+                "WHERE bill.time >= DATEADD(DAY, " +
+                "CASE " +
+                "WHEN DATEPART(WEEKDAY, GETDATE()) = 1 THEN -13 " +  // Nếu hôm nay là Chủ nhật, lùi 13 ngày
+                "ELSE -6 - (DATEPART(WEEKDAY, GETDATE()) - 2) " +   // Các ngày khác, lùi đến thứ 2 tuần trước
+                "END, CAST(GETDATE() AS DATE)) " +
+                "AND bill.time <= DATEADD(DAY, " +
+                "CASE " +
+                "WHEN DATEPART(WEEKDAY, GETDATE()) = 1 THEN -7 " +  // Nếu hôm nay là Chủ nhật, lùi 7 ngày
+                "ELSE - (DATEPART(WEEKDAY, GETDATE()) - 1) " +      // Các ngày khác, lùi đến Chủ nhật tuần trước
+                "END, CAST(GETDATE() AS DATE))";
+
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            if (rs.next()) {
+                return rs.getDouble("total_payment");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
      * Hàm xử lí thống kế nhân viên bán được nhiều món ăn trong năm.
      *
      * Hàm truy vấn database và trả về danh sách nhân viên sắp xếp giảm dần tổng số tiền bán được của những món ăn trong năm
@@ -139,6 +169,8 @@ public class RatingCalculation {
         }
         return null;
     }
+
+
 
     private static ResultSet loadDataRankingStaff() {
         String sql = "SELECT staffID, rating FROM ranking_staff";

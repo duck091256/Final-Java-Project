@@ -24,7 +24,12 @@ public class Ordering {
         orderList.put(table.getTableID(), list);
         return true;
     }
-
+    /**
+     * Trả về danh sách các món được gọi của bàn hiện tại
+     *
+     * @param table bàn order món ăn
+     * @return ArrayList<Dish> danh sách những món table đang order
+     */
     public static ArrayList<Dish> getOrderingFromTable(Table table) {
         return orderList.getOrDefault(table.getTableID(), null);
     }

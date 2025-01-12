@@ -2,7 +2,6 @@ package view;
 
 import java.awt.EventQueue;
 import java.awt.Point;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JWindow;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
@@ -26,13 +26,11 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 import data_access_object.BillDAO;
 import data_access_object.DishDAO;
-import data_access_object.EmployeeDAO;
 import data_access_object.StaffDAO;
 import data_access_object.TableDAO;
 import fx.*;
 import model.Bill;
 import model.Dish;
-import model.Employee;
 import model.RankingStaff;
 import model.Staff;
 import model.Table;
@@ -47,17 +45,16 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.sql.Date;
 import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 
 import java.awt.Font;
@@ -67,19 +64,16 @@ import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.Insets;
-import java.awt.MediaTracker;
-
 import javax.swing.border.*;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 
-import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -93,8 +87,8 @@ public class ManagementSystem extends JFrame {
     private JLabel dishImage, lbl_table_image;
     private JPanel panel_setting;
     private JPanel floorPanel, panel_image;
-    private Map<Integer, Integer> tableCount = TableDAO.numOfTableByFloor();
-    private int tableCountFloor1 = tableCount.getOrDefault(1, 0), tableCountFloor2 = tableCount.getOrDefault(2, 0), dishCount = DishDAO.countRows();
+    public static Map<Integer, Integer> tableCount = TableDAO.numOfTableByFloor();
+    public static int tableCountFloor1 = tableCount.getOrDefault(1, 0), tableCountFloor2 = tableCount.getOrDefault(2, 0), dishCount = DishDAO.countRows();
     private JPanel contentPane;
     private JPanel grip_mode_show_table_floor1, grip_mode_show_table_floor2, grip_mode_show_menu;
     private RoundedLabelEffect lbl_switch_table_floor1, lbl_switch_table_floor2;
@@ -1112,6 +1106,29 @@ public class ManagementSystem extends JFrame {
         menu.repaint();
     }
     
+    private void showLargeImage(String imagePath) {
+        // Sử dụng JWindow thay vì Window
+        JWindow imageFrame = new JWindow();
+        ImageIcon icon = new ImageIcon(imagePath);
+        JLabel imageLabel = new JLabel(icon);
+
+        Image img = icon.getImage();
+        Image scaledImg = img.getScaledInstance(700, 500, Image.SCALE_SMOOTH);
+        imageLabel.setIcon(new ImageIcon(scaledImg));
+
+        imageFrame.add(imageLabel);
+        imageFrame.pack();
+        imageFrame.setLocationRelativeTo(null);
+        imageFrame.setVisible(true);
+
+        imageLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                imageFrame.dispose();
+            }
+        });
+    }
+
     private void addDishToMenu(String dishName, Dish dishes) {
         String tmp = dishes.getDishImage();
         
@@ -1130,20 +1147,12 @@ public class ManagementSystem extends JFrame {
         
         JPdish.add(lblDishName);
         JPdish.add(lblDishImage);
-
+        
         // Sự kiện khi nhấn
         JPdish.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                int confirm = JOptionPane.showConfirmDialog(
-                    null, 
-                    "Bạn có chắc chắn muốn xóa " + dishName + "?", 
-                    "Xác nhận xóa", 
-                    JOptionPane.YES_NO_OPTION
-                );
-                if (confirm == JOptionPane.YES_OPTION) {
-                    removeDish(dishes.getDishID());
-                }
+            	showLargeImage(tmp); 
             }
         });
 
@@ -2456,6 +2465,33 @@ private JPanel switchGripModeFloor2() {
     		public void mousePressed(MouseEvent e) {
     			lbl_add.setForeground(Color.WHITE);
     			lbl_add.setBackground(new Color(33, 136, 56));
+    			addReceipt();
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+		});
+    	
+    	lbl_add.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_add.setForeground(Color.BLACK);
+    			lbl_add.setBackground(new Color(129, 199, 132));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(33, 136, 56));
     		}
     		
     		@Override
@@ -2524,6 +2560,49 @@ private JPanel switchGripModeFloor2() {
 	        Object[] newRow = {bill.getBillID(), bill.isWasPay(), bill.getTime(), bill.getPayment()};
 	        Receipt_table_mode.addRow(newRow);
 		}
+    }
+    
+    private void addReceipt() {
+        JTextField tfBillID = new JTextField();
+        JTextField tfStatus = new JTextField();
+        JTextField tfDateTime = new JTextField();
+        JTextField tfTotalPrice = new JTextField("0");
+        
+        JPanel panel = new JPanel(new GridLayout(6, 2));
+        panel.add(new JLabel("Mã Hóa Đơn:"));
+        panel.add(tfBillID);
+        panel.add(new JLabel("Trạng Thái Thanh Toán:"));
+        panel.add(tfStatus);
+        panel.add(new JLabel("Thời Gian:"));
+        panel.add(tfDateTime);
+        panel.add(new JLabel("Tổng Tiền:"));
+        panel.add(tfTotalPrice);
+
+        int result = JOptionPane.showConfirmDialog(null, panel, "Thêm hóa đơn mới", JOptionPane.OK_CANCEL_OPTION);
+
+        // Xử lý nếu người dùng nhấn OK
+        if (result == JOptionPane.OK_OPTION) {
+            String billID = tfBillID.getText();
+            if (billID.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Mã hóa đơn không được để trống!");
+                return;
+            }
+
+            // Lấy thông tin, nếu trống thì chuyển thành "null"
+            Boolean status = tfStatus.getText().trim().isEmpty() ? null : Boolean.valueOf(tfStatus.getText().trim());
+            Date dateTime = tfDateTime.getText().trim().isEmpty() ? null : Date.valueOf(tfDateTime.getText().trim());
+            Double totalPrice = tfTotalPrice.getText().trim().isEmpty() ? null : Double.valueOf(tfTotalPrice.getText().trim());
+            
+            try {
+                Bill bill = new Bill(billID, status, dateTime, totalPrice);
+                if(BillDAO.addBill(bill)) {
+	                Object[] newRow = {bill.getBillID(), bill.isWasPay(), bill.getTime(), bill.getPayment()};
+	                Receipt_table_mode.addRow(newRow);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
+            }
+        }
     }
     
     private JPanel createStaffPanel() {

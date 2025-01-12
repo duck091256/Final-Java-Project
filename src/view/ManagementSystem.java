@@ -36,6 +36,7 @@ import model.Staff;
 import model.Table;
 import service.RatingCalculation;
 
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
@@ -74,6 +75,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -991,20 +993,19 @@ public class ManagementSystem extends JFrame {
 		Dish_table_model.fireTableDataChanged();
 	}
 
-
     private JPanel switchGripModeForMenu() {
     	
     	// Chế độ lưới (Switch Mode)
     	grip_mode_show_menu = new JPanel();
     	grip_mode_show_menu.setBackground(Color.WHITE);
     	grip_mode_show_menu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-    	grip_mode_show_menu.setBounds(38, 224, 1204, 298);
+    	grip_mode_show_menu.setBounds(38, 224, 1022, 298);
     	grip_mode_show_menu.setLayout(null);
         
         menu = new JPanel();
         menu.setBackground(Color.WHITE);
         menu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-        menu.setBounds(0, 0, 1202, 296);
+        menu.setBounds(0, 0, 1022, 296);
         menu.setLayout(new GridLayout(0, 5, 10, 10));
         menu.setPreferredSize(new Dimension(500, 500));
         menu.setDoubleBuffered(true);
@@ -1089,7 +1090,6 @@ public class ManagementSystem extends JFrame {
 
 			menu.revalidate();
 			menu.repaint();
-
 			JOptionPane.showMessageDialog(null, "Món ăn đã được xóa!");
 		} else {
 			JOptionPane.showMessageDialog(null, "Không tìm thấy món ăn để xóa.");
@@ -1104,6 +1104,8 @@ public class ManagementSystem extends JFrame {
         // Làm mới giao diện
         menu.revalidate(); 
         menu.repaint();
+        
+        addNewDishInMiniMenu();
     }
     
     private void showLargeImage(String imagePath) {
@@ -1573,6 +1575,7 @@ public class ManagementSystem extends JFrame {
     		public void mousePressed(MouseEvent e) {
     			lbl_adjust.setForeground(Color.WHITE);
     			lbl_adjust.setBackground(new Color(0, 86, 179));
+    			viewOrder();
     		}
     		
     		@Override
@@ -2032,33 +2035,117 @@ public class ManagementSystem extends JFrame {
 	        }
     	}
     }
-    
+
     private void addTableFloor1() {
         tableCountFloor1++;
         addTableToPanelFloor1("Bàn " + tableCountFloor1, "Trống");
         floor1.revalidate(); // Làm mới giao diện
         floor1.repaint();
     }
+
+    private void removeTableFloor1() {
+        if (tableCountFloor1 > 0) {
+            tableCountFloor1--;
+            refreshTablesFloor1();
+        } else {
+            JOptionPane.showMessageDialog(null, "Không còn bàn nào để xóa!");
+        }
+    }
+    
+    private void refreshTablesFloor1() {
+        floor1.removeAll(); // Xóa tất cả các bàn
+        for (int i = 1; i <= tableCountFloor1; i++) {
+            addTableToPanelFloor1("Bàn " + i, "Trống");
+        }
+        floor1.revalidate();
+        floor1.repaint();
+    }
+    
+    private Map<String, JLabel> tableStatusMap = new HashMap<>();
     
     private void addTableToPanelFloor1(String tableName, String status) {
-    	JPanel Table = new JPanel();
+        JPanel Table = new JPanel();
         Table.setBackground(Color.WHITE);
         Table.setPreferredSize(new Dimension(100, 100));
         Table.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
-        JLabel lbl_table = new JLabel("<html>" + tableName + "<br>" + status + "</html>");
-        Table.add(lbl_table);
-        
-        // Sự kiện khi nhấn vào bàn
+        Table.setLayout(new BorderLayout());
+
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new BoxLayout(labelPanel, BoxLayout.Y_AXIS));
+        labelPanel.setBackground(Color.WHITE);
+        labelPanel.setOpaque(false);
+        labelPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JLabel lblTableName = new JLabel(tableName);
+        lblTableName.setFont(new Font("Arial", Font.BOLD, 16));
+        lblTableName.setForeground(Color.BLACK);
+        lblTableName.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel lblStatus = new JLabel(status);
+        lblStatus.setFont(new Font("Arial", Font.PLAIN, 15));
+        lblStatus.setForeground(Color.GRAY);
+        lblStatus.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Lưu nhãn trạng thái vào HashMap để dễ cập nhật sau này
+        tableStatusMap.put(tableName, lblStatus);
+
+        labelPanel.add(lblTableName);
+        labelPanel.add(Box.createVerticalStrut(5)); // Khoảng cách giữa tableName và status
+        labelPanel.add(lblStatus);
+
+        Table.add(labelPanel, BorderLayout.CENTER);
+
         Table.addMouseListener(new MouseAdapter() {
-        	@Override
-        	public void mouseClicked(MouseEvent e) {
-        		JOptionPane.showMessageDialog(null, "Bạn đã chọn " + tableName);
-        	}
-		});
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                chooseAndUpdateTableStatus(tableName); // Cho phép chọn trạng thái mới
+            }
+        });
+
         floor1.add(Table);
     }
     
-private JPanel switchGripModeFloor2() {
+    private void updateTableStatus(String tableName, String newStatus) {
+        // Kiểm tra nếu bàn tồn tại trong HashMap
+        if (tableStatusMap.containsKey(tableName)) {
+            JLabel lblStatus = tableStatusMap.get(tableName);
+            lblStatus.setText(newStatus); // Cập nhật trạng thái
+            lblStatus.setForeground(Color.BLUE); // Thay đổi màu sắc nếu cần
+        } else {
+            JOptionPane.showMessageDialog(null, "Bàn " + tableName + " không tồn tại!");
+        }
+    }
+
+    private void chooseAndUpdateTableStatus(String tableName) {
+        // Kiểm tra nếu bàn tồn tại
+        if (!tableStatusMap.containsKey(tableName)) {
+            JOptionPane.showMessageDialog(null, "Bàn " + tableName + " không tồn tại!");
+            return;
+        }
+
+        // Danh sách trạng thái có thể chọn
+        String[] statuses = {"Trống", "Đang sử dụng", "Đã đặt trước", "Bảo trì"};
+        
+        // Hiển thị hộp thoại để người dùng chọn trạng thái
+        String newStatus = (String) JOptionPane.showInputDialog(
+            null,
+            "Chọn trạng thái mới cho " + tableName + ":",
+            "Cập nhật trạng thái",
+            JOptionPane.QUESTION_MESSAGE,
+            null, // Không có icon
+            statuses, // Danh sách trạng thái
+            statuses[0] // Trạng thái mặc định
+        );
+
+        // Nếu người dùng chọn trạng thái
+        if (newStatus != null) {
+            // Cập nhật trạng thái của bàn
+            updateTableStatus(tableName, newStatus);
+            JOptionPane.showMessageDialog(null, "Cập nhật trạng thái thành công!");
+        }
+    }
+    
+    private JPanel switchGripModeFloor2() {
     	
     	// Chế độ lưới (Switch Mode)
     	grip_mode_show_table_floor2 = new JPanel();
@@ -2111,6 +2198,24 @@ private JPanel switchGripModeFloor2() {
         floor2.repaint();
     }
     
+    private void removeTableFloor2() {
+        if (tableCountFloor2 > 0) {
+            tableCountFloor2--;
+            refreshTablesFloor2();
+        } else {
+            JOptionPane.showMessageDialog(null, "Không còn bàn nào để xóa!");
+        }
+    }
+    
+    private void refreshTablesFloor2() {
+        floor2.removeAll(); // Xóa tất cả các bàn
+        for (int i = 1; i <= tableCountFloor2; i++) {
+            addTableToPanelFloor2("Bàn " + i, "Trống");
+        }
+        floor2.revalidate();
+        floor2.repaint();
+    }
+    
     private void addTableToPanelFloor2(String tableName, String status) {
     	JPanel Table = new JPanel();
         Table.setBackground(Color.WHITE);
@@ -2137,10 +2242,138 @@ private JPanel switchGripModeFloor2() {
 		}
     }
     
+    private JPanel containtMiniMenu, miniMenu;
+    
+    private JPanel MenuForTablePage() {
+    	containtMiniMenu = new JPanel();
+    	containtMiniMenu.setBackground(Color.WHITE);
+    	containtMiniMenu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	containtMiniMenu.setBounds(38, 224, 1022, 350);
+    	containtMiniMenu.setLayout(null);
+        
+    	miniMenu = new JPanel();
+    	miniMenu.setBackground(Color.WHITE);
+    	miniMenu.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	miniMenu.setBounds(0, 0, 1022, 350);
+    	miniMenu.setLayout(new GridLayout(0, 5, 10, 10));
+    	miniMenu.setPreferredSize(new Dimension(500, 500));
+    	miniMenu.setDoubleBuffered(true);
+        
+        loadMiniMenu();
+        
+    	JScrollPane scrollPane = new JScrollPane(miniMenu);
+        scrollPane.setBounds(0, 0, 1009, 310);
+        containtMiniMenu.add(scrollPane);
+        
+        miniMenu.revalidate(); // Làm mới giao diện
+        miniMenu.repaint();
+    	
+    	return containtMiniMenu;
+    }
+    
+    private void loadMiniMenu() {
+        for (int i = 1; i <= dishCount; i++) {
+        	Dish dishes = DishDAO.accessDish(i - 1);
+        	addDishToMiniMenu("Món " + dishes.getDishName(), dishes);
+        }
+    }
+    
+    private void addNewDishInMiniMenu() {
+        Dish dishes = DishDAO.accessDish(dishCount - 1);
+        addDishToMiniMenu("Món " + dishes.getDishName(), dishes);
+        
+        // Làm mới giao diện
+        miniMenu.revalidate(); 
+        miniMenu.repaint();
+    }
+    
+    private void addDishToMiniMenu(String dishName, Dish dishes) {
+        String tmp = dishes.getDishImage();
+        
+        JPanel JPdish = new JPanel();
+        JPdish.setBackground(Color.WHITE);
+        JPdish.setPreferredSize(new Dimension(100, 150));
+        JPdish.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        JPdish.setLayout(new BoxLayout(JPdish, BoxLayout.Y_AXIS));
+
+        JLabel lblDishName = new JLabel(dishName, SwingConstants.CENTER);
+        lblDishName.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel lblDishImage = new JLabel();
+        lblDishImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+        setDishImage(lblDishImage, tmp);
+        
+        JPdish.add(lblDishName);
+        JPdish.add(lblDishImage);
+        
+        // Sự kiện khi nhấn
+        JPdish.addMouseListener(new MouseAdapter() {
+        	//
+        });
+
+        // Thêm món ăn vào danh sách và giao diện
+        miniMenu.add(JPdish);
+
+        // Làm mới giao diện
+        miniMenu.revalidate();
+        miniMenu.repaint();
+    }
+    
+    private JDialog dialog, menuDialog;
+    
+    private JDialog menuDialog() {
+		JPanel switchPanel = MenuForTablePage();
+		
+        menuDialog = new JDialog(dialog, "Thêm Món", true);
+        menuDialog.setSize(switchPanel.getPreferredSize());
+        menuDialog.setLayout(new BorderLayout());
+        menuDialog.add(switchPanel, BorderLayout.CENTER);
+        menuDialog.setLocationRelativeTo(dialog);
+        menuDialog.setVisible(true);
+        
+        return menuDialog;
+    }
+    
+    private void viewOrder() {
+        dialog = new JDialog((Frame) null, "Thông Tin Order", true);
+        dialog.setSize(400, 300);
+        dialog.setLayout(new BorderLayout());
+
+        JPanel contentPanel = new JPanel();
+        contentPanel.add(new JLabel("Nội dung cần hiển thị ở đây"));
+        dialog.add(contentPanel, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel();
+        JButton okButton = new JButton("OK");
+        JButton addButton = new JButton("Thêm món");
+
+        okButton.addMouseListener(new MouseAdapter() {
+        	@Override
+            public void mouseClicked(MouseEvent e) {
+                dialog.dispose();
+            }
+        });
+
+        addButton.addMouseListener(new MouseAdapter() {
+        	@Override
+            public void mouseClicked(MouseEvent e) {
+        		menuDialog();
+            }
+        });
+
+        buttonPanel.add(okButton);
+        buttonPanel.add(addButton);
+
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
+    }
+    
     private void addTable() {
         JTextField tfTableID = new JTextField("#T");
         JTextField tfFloor = new JTextField();
-        JTextField tfStatus = new JTextField("Đang chuẩn bị");
+        JTextField tfStatus = new JTextField("Sẵn sàng phục vụ");
         tfStatus.setBackground(Color.WHITE);
         tfStatus.setEditable(false);
         JTextField tfResBy = new JTextField();
@@ -2178,11 +2411,22 @@ private JPanel switchGripModeFloor2() {
             String resBy = tfResBy.getText().trim().isEmpty() ? null : tfResBy.getText().trim();
             String clientNum = tfClientNum.getText().trim().isEmpty() ? null : tfClientNum.getText().trim();
 
+            if (!"1".equals(floor) && !"2".equals(floor)) {
+            	JOptionPane.showMessageDialog(null, "Hiện tại chỉ có tầng 1 và tầng 2!");
+            	return;
+            }
             try {
                 Table table = new Table(tableID, floor, status, resBy, clientNum);
                 if(TableDAO.addTable(table)) {
 	                Object[] newRow = {table.getTableID(), table.getFloorStay(), table.getOperatingStatus(), table.getResponsibleBy(), table.getClientNum()};
 	                Floor_table_model.addRow(newRow);
+	                
+	                // Kiểm tra bàn được thêm ở tầng nào thêm vào tầng tương ứng
+	                if ("1".equals(floor)) {
+	                	addTableFloor1();
+	                } else if ("2".equals(floor)) {
+	                	addTableFloor2();
+	                }
                 }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Lỗi: " + e.getMessage());
@@ -2195,13 +2439,26 @@ private JPanel switchGripModeFloor2() {
  		int selectedRow = FloorTable.getSelectedRow();
 
  		String tableID = FloorTable.getValueAt(selectedRow, 0).toString();
-
+ 		
+ 		// Gọi đối tượng
+ 		Table tableNeedToRemove = TableDAO.getTable(tableID);
+ 		
+ 		// Lấy số tầng của bàn đó
+ 		String floorOfThatTable = tableNeedToRemove.getFloorStay();
+ 		
  		// Gọi phương thức xóa bàn trong Class DAO
  		boolean success = TableDAO.deleteTable(tableID);
 
  		if (success) {
  			// Nếu xóa thành công, xóa dòng trong bảng
  			Floor_table_model.removeRow(selectedRow);
+ 			
+ 			// Kiểm tra và xóa bàn khỏi tầng tương ứng
+ 			if ("1".equals(floorOfThatTable)) {
+ 				removeTableFloor1();
+ 			} else {
+ 				removeTableFloor2();
+ 			}
  		} else {
  			JOptionPane.showMessageDialog(null, "Xóa bàn thất bại!", "Thông báo", JOptionPane.ERROR_MESSAGE);
  		}

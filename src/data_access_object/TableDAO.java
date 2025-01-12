@@ -201,6 +201,11 @@ public class TableDAO {
 		}
 	}
 	
+    public static Table accessTable(int index) {
+    	Table table = list.get(index);
+    	return table;
+    }
+	
 	public static Map<Integer, Integer> numOfTableByFloor() {
 	    Map<Integer, Integer> tableCountByFloor = new HashMap<>();
 	    try {

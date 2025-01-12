@@ -24,4 +24,8 @@ public class Ordering {
         orderList.put(table.getTableID(), list);
         return true;
     }
+
+    public static ArrayList<Dish> getOrderingFromTable(Table table) {
+        return orderList.getOrDefault(table.getTableID(), null);
+    }
 }

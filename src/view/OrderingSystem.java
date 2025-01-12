@@ -93,7 +93,7 @@ public class OrderingSystem extends JFrame {
 				rlbl_table.setFont(new Font("Arial", Font.PLAIN, 14));
 				
                 cardLayoutLeft.show(cardPanelLeft, "Thực đơn");
-//                cardLayoutRight.show(cardPanelRight, "Thực đơn");
+                //cardLayoutRight.show(cardPanelRight, "Thực đơn");
                 checkTabMenu = false;
                 checkTabTable = true;
             }

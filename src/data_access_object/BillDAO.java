@@ -80,7 +80,7 @@ public class BillDAO {
 	}
 
     public static void storeBill(Connection conn, String billID, LocalDateTime time, double totalPrice) {
-        String sql = "INSERT INTO bill VALUES (?, ?, ?, ?)";
+    	String sql = "INSERT INTO bill VALUES (?, ?, ?, ?)";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, billID);

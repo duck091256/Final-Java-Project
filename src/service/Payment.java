@@ -4,6 +4,7 @@ import database.JDBCUtil;
 import model.DetailReceipt;
 import model.Dish;
 import model.Table;
+import view.ManagementSystem;
 
 import java.sql.Connection;
 import java.time.LocalDateTime;

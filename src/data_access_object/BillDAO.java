@@ -92,4 +92,21 @@ public class BillDAO {
             e.printStackTrace();
         }
     }
+
+    public static ArrayList<Bill> loadBill() {
+        String sql = "SELECT * FROM bill";
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            ArrayList<Bill> ans = new ArrayList<>();
+            while(rs.next()) {
+                ans.add(new Bill(rs.getString(1), rs.getBoolean(2), rs.getDate(3), rs.getDouble(4)));
+            }
+            return ans;
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

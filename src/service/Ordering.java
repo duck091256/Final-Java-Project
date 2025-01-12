@@ -24,6 +24,7 @@ public class Ordering {
         orderList.put(table.getTableID(), list);
         return true;
     }
+
     /**
      * Trả về danh sách các món được gọi của bàn hiện tại
      *

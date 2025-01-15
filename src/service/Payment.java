@@ -12,6 +12,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 
+import javax.security.auth.callback.LanguageCallback;
+import javax.swing.JOptionPane;
+
 import static data_access_object.BillDAO.storeBill;
 import static data_access_object.DetailReceiptDAO.storeDetailReceipt;
 import static data_access_object.RankingStaffDAO.updateRankings;
@@ -39,8 +42,10 @@ public class Payment {
 
         ArrayList<Dish> list = orderList.getOrDefault(table.getTableID(), new ArrayList<>());
         ArrayList<DetailReceipt> detailBill = new ArrayList<>();
-
-        double totalPrice = 0;
+        
+        if (list.isEmpty() || list == null) {
+        	return false;
+        }
 
         list.sort(new Comparator<Dish>() {
             @Override
@@ -49,8 +54,10 @@ public class Payment {
             }
         });
 
+        int sub = 0;
+        double totalPrice = 0;
         totalPrice += list.get(0).getDishPrice();
-        int sub = list.get(0).getQuantity();
+        sub = list.get(0).getQuantity();
         for (int i = 1; i < list.size(); i++) {
             Dish curDish = list.get(i);
             Dish preDish = list.get(i - 1);
@@ -66,9 +73,9 @@ public class Payment {
             }
         }
 
-        Dish lastDish = list.get(list.size() - 1);
-        totalPrice += lastDish.getDishPrice();
-        sub += lastDish.getQuantity();
+//        Dish lastDish = list.get(list.size() - 1);
+//        totalPrice += lastDish.getDishPrice();
+//        sub += lastDish.getQuantity();
         detailBill.add(new DetailReceipt(list.get(list.size() - 1).getDishID(), billID, sub));
         table.setAvailable(true);
         orderList.remove(table.getTableID());
@@ -80,14 +87,14 @@ public class Payment {
             storeBill(conn, billID, time, totalPrice);
 
             // Stored Session
-            String sessionID = billID + table.getResponsibleBy();
-            storeSession(conn, sessionID, table.getResponsibleBy(), table.getTableID(), billID);
+//            String sessionID = billID + table.getResponsibleBy();
+//            storeSession(conn, sessionID, table.getResponsibleBy(), table.getTableID(), billID);
 
             // Stored detail receipt
             storeDetailReceipt(conn, detailBill);
 
             // Stored ranking staff
-            updateRankings(table.getResponsibleBy(), (int) totalPrice / 10);
+//            updateRankings(table.getResponsibleBy(), (int) totalPrice / 10);
 
         } catch (Exception e) {
             e.printStackTrace();

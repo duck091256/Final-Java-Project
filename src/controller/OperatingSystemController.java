@@ -12,7 +12,7 @@ import view.Login;
 
 public class OperatingSystemController {
 	
-	public void exit(JLabel exit) {
+	public static void exit(JLabel exit) {
 	    exit.addMouseListener(new MouseAdapter() {
 	        @Override
 	        public void mouseClicked(MouseEvent e) {

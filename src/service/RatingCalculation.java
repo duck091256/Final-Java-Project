@@ -44,12 +44,12 @@ public class RatingCalculation {
     public static ArrayList<Dish> getListOfRatingDish() {
         ArrayList<Dish> ans = new ArrayList<>();
         ArrayList<DetailReceipt> detailReceiptArrayList = new ArrayList<>();
+        Connection connection = JDBCUtil.getConnection();
 
-        ResultSet rs = loadDataDishThisWeek();
-        if (rs == null) return null;
+        try (ResultSet rs = loadDataDishThisWeek(connection)) {  // Ensure ResultSet is managed properly
+            if (rs == null) return null;
 
-        try {
-            while(rs.next()) {
+            while (rs.next()) {
                 detailReceiptArrayList.add(new DetailReceipt(
                         rs.getString("dishID"),
                         rs.getString("billID"),
@@ -57,14 +57,13 @@ public class RatingCalculation {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return null;
         }
 
-        detailReceiptArrayList.sort(new Comparator<DetailReceipt>() {
-            @Override
-            public int compare(DetailReceipt o1, DetailReceipt o2) {
-                return o1.getDishID().compareTo(o2.getDishID());
-            }
-        });
+        // Sort and process data
+        detailReceiptArrayList.sort(Comparator.comparing(DetailReceipt::getDishID));
+
+        if (detailReceiptArrayList.isEmpty()) return ans;
 
         int quan = detailReceiptArrayList.get(0).getDishQuantity();
 
@@ -78,28 +77,22 @@ public class RatingCalculation {
                 rankingDish.setQuantity(quan);
                 ans.add(rankingDish);
                 quan = curDish.getDishQuantity();
-            }
-            else {
+            } else {
                 quan += curDish.getDishQuantity();
             }
         }
 
         DetailReceipt lastDish = detailReceiptArrayList.get(detailReceiptArrayList.size() - 1);
         Dish tmp = DishDAO.map.get(lastDish.getDishID());
-        quan += lastDish.getDishQuantity();
         Dish rankingDish = new Dish(tmp.getDishID(), tmp.getDishName(), tmp.getDishPrice(), tmp.getDishCategory(), tmp.getDishImage());
         rankingDish.setQuantity(quan);
         ans.add(rankingDish);
 
-        ans.sort(new Comparator<Dish>() {
-            @Override
-            public int compare(Dish o1, Dish o2) {
-                return Integer.compare(o2.getQuantity(), o1.getQuantity());
-            }
-        });
+        ans.sort((o1, o2) -> Integer.compare(o2.getQuantity(), o1.getQuantity()));
 
         return ans;
     }
+
 
     /**
      * Hàm xử lí thống kế nhân viên bán được nhiều món ăn trong năm.
@@ -117,21 +110,21 @@ public class RatingCalculation {
      *
      * @return 1 ResultSet là kết quả của truy vấn database
      */
-    private static ResultSet loadDataDishThisWeek() {
-        String sql = "SELECT * " +
+    private static ResultSet loadDataDishThisWeek(Connection conn) {
+    	String sql = "SELECT * " +
                 "FROM detail_receipt " +
-                "INNER JOIN " +
-                "bill " +
-                "ON " +
-                "bill.billID = detail_receipt.billID " +
-                "WHERE bill.time >= DATEADD(DAY, " +
-                    "CASE " +
-                        "WHEN DATEPART(WEEKDAY, GETDATE()) = 1 THEN -6 " +
-                        "ELSE 2 - DATEPART(WEEKDAY, GETDATE())" +
-                    "END, " +
-                "CAST(GETDATE() AS DATE)) AND bill.time <= GETDATE()";
+                "INNER JOIN bill " +
+                "ON bill.billID = detail_receipt.billID " +
+                "WHERE bill.time >= DATE_ADD(CURDATE(), " +
+                "    INTERVAL " +
+                "        CASE " +
+                "            WHEN DAYOFWEEK(NOW()) = 1 THEN -6 " +
+                "            ELSE 2 - DAYOFWEEK(NOW()) " +
+                "        END DAY " +
+                ") " +
+                "AND bill.time <= NOW();";
 
-        try (Connection conn = JDBCUtil.getConnection();
+        try (
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             return stmt.executeQuery();
         } catch (Exception e) {
@@ -149,5 +142,34 @@ public class RatingCalculation {
             e.printStackTrace();
         }
         return null;
+    }
+    
+    /**
+     * Hàm tính tổng bill bán được trong tuần.
+     *
+     * @return Tổng bill bán được trong tuần hoặc -1 nếu xảy ra lỗi
+     */
+    public static double getTotalBillThisWeek() {
+    	String sql = "SELECT SUM(payment) AS totalSales " +
+                "FROM bill " +
+                "WHERE bill.time >= DATE_ADD(CURDATE(), " +
+                "INTERVAL " +
+                "CASE " +
+                "WHEN DAYOFWEEK(NOW()) = 1 THEN -6 " +
+                "ELSE 2 - DAYOFWEEK(NOW()) " +
+                "END DAY) " +
+                "AND bill.time <= NOW();";
+
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ) {
+        	ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getDouble("totalSales");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 }

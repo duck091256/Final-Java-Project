@@ -7,21 +7,21 @@ public class Staff {
 	private String userName;	// K cần sửa
 	private String password;	// K cần sửa
 	private String fullName;
+	private String sex;
 	private String phone;
 	private String position;
-	private String sex;
 	private Time startShift;	// K cần sửa
 	private Time endShift;		// K cần sửa	
 
-	public Staff(String staffID, String userName, String password, String fullName, String phone, String position, String sex,
+	public Staff(String staffID, String userName, String password, String fullName, String sex, String phone, String position,
 			Time startShift, Time endShift) {
 		this.staffID = staffID;
 		this.userName = userName;
 		this.password = password;
 		this.fullName = fullName;
+		this.sex = sex;
 		this.phone = phone;
 		this.position = position;
-		this.sex = sex;
 		this.startShift = startShift;
 		this.endShift = endShift;
 	}
@@ -31,9 +31,9 @@ public class Staff {
 		this.userName = tmp.userName;
 		this.password = tmp.password;
 		this.fullName = tmp.fullName;
+		this.sex = tmp.sex;
 		this.phone = tmp.phone;
 		this.position = tmp.position;
-		this.sex = tmp.sex;
 		this.startShift = tmp.startShift;
 		this.endShift = tmp.endShift;
 	}

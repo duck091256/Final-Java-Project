@@ -5,16 +5,14 @@ public class Table {
 	private String floorStay;
 	private String operatingStatus;
 	private String responsibleBy;
-	private String clientNum;
 
 	private boolean available;
 	
-	public Table(String tableID, String floorStay, String operatingStatus, String responsibleBy, String clientNum) {
+	public Table(String tableID, String floorStay, String operatingStatus, String responsibleBy) {
 		this.tableID = tableID;
 		this.floorStay = floorStay;
 		this.operatingStatus = operatingStatus;
 		this.responsibleBy = responsibleBy;
-		this.clientNum = clientNum;
 		available = true;
 	}
 	public String getTableID() {
@@ -40,12 +38,6 @@ public class Table {
 	}
 	public void setResponsibleBy(String responsibleBy) {
 		this.responsibleBy = responsibleBy;
-	}
-	public String getClientNum() {
-		return clientNum;
-	}
-	public void setClientNum(String clientNum) {
-		this.clientNum = clientNum;
 	}
 
 	public boolean getAvailable() {return available;}

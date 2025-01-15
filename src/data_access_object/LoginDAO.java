@@ -13,7 +13,7 @@ public class LoginDAO {
         try {
         	Connection connection = JDBCUtil.getConnection();
 
-            String sql = "SELECT * FROM staff_account WHERE username = ? AND password = ?";
+            String sql = "SELECT * FROM admin WHERE userName = ? AND password = ?";
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, username);
             statement.setString(2, password);

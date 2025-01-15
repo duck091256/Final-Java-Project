@@ -1,5 +1,6 @@
 package data_access_object;
 
+import java.awt.Image;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -113,9 +114,14 @@ public class DishDAO {
 			return false;
 		}
 		
-		DishDAO.list.add(dish);
-		DishDAO.map.put(dish.getDishID(), dish);
-		DishDAO.originalList.add(dish);
+		try (Connection connection = JDBCUtil.getConnection()) {
+			addDishToDatabase(dish, connection);
+			DishDAO.list.add(dish);
+			DishDAO.map.put(dish.getDishID(), dish);
+			DishDAO.originalList.add(dish);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
         JOptionPane.showMessageDialog(null, "Đã món mới thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 		return true;
 	}
@@ -157,24 +163,39 @@ public class DishDAO {
 				originalList.set(i, newDish);
 			}
 		}
+		
+		try (Connection connection = JDBCUtil.getConnection()) {
+			updateDishToDatabase(dish, newDish, connection);
 
-		map.remove(oldID);
-		map.put(newID, newDish);
-
+			map.remove(oldID);
+			map.put(newID, newDish);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		JOptionPane.showMessageDialog(null, "Cập nhật món ăn thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 		return true;
 	}
 
 	public static boolean deleteDish(String id) {
 		if (!DishDAO.map.containsKey(id)) return false;
+		Dish dish1 = DishDAO.getDish(id);
+		
+		try (Connection connection = JDBCUtil.getConnection()) {
 
-		// delete from map
-		map.remove(id);
+			// delete from map
+			map.remove(id);
 
-	    // Xóa món ăn khỏi list
-	    list.removeIf(dish -> dish.getDishID().equals(id));
-		originalList.removeIf(dish -> dish.getDishID().equals(id));
+		    // Xóa món ăn khỏi list
+		    list.removeIf(dish -> dish.getDishID().equals(id));
+			originalList.removeIf(dish -> dish.getDishID().equals(id));
 
+
+			deleteDishToDatabase(dish1, connection);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return true;
 	}
 	
@@ -232,6 +253,20 @@ public class DishDAO {
 			e.printStackTrace();
 		}
 	}
+
+	public static void updateImageToData(String dishID, String imagePath) {
+		String sqlString = "UPDATE dish SET dishImage = ? WHERE dishID = ?";
+		
+		try (Connection connection = JDBCUtil.getConnection(); 
+				PreparedStatement stmtPreparedStatement = connection.prepareStatement(sqlString)) {
+			stmtPreparedStatement.setString(1, imagePath);
+			stmtPreparedStatement.setString(2, dishID);
+			
+			stmtPreparedStatement.executeUpdate();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
 	public static int countRows() {
 		int rowCount = 0;
@@ -259,5 +294,38 @@ public class DishDAO {
         }
 		
 		return rowCount;
+	}
+	
+
+	public static void addDishToDatabase(Dish dish, Connection conn) {
+		String sql = "INSERT INTO dish VALUES (?, ?, ?, ?, ?)";
+		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+			stmt.setString(1, dish.getDishID());
+			stmt.setString(2, dish.getDishName());
+			stmt.setDouble(3, dish.getDishPrice());
+			stmt.setString(4, dish.getDishCategory());
+			stmt.setString(5, dish.getDishImage());
+			
+			stmt.executeUpdate();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void deleteDishToDatabase(Dish dish, Connection conn) {
+		String delete_sql = "DELETE FROM dish WHERE dishID = ?";
+		
+		try (PreparedStatement stmt = conn.prepareStatement(delete_sql)) {
+			stmt.setString(1, dish.getDishID());
+			stmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void updateDishToDatabase(Dish dish, Dish newDish, Connection conn) {
+		deleteDishToDatabase(dish, conn);
+		addDishToDatabase(newDish, conn);
 	}
 }

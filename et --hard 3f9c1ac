@@ -1,0 +1,62 @@
+[33md78d969[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{0}: reset: moving to HEAD~1
+[33ma3045a1[m HEAD@{1}: reset: moving to HEAD~1
+[33m7b4e78f[m HEAD@{2}: commit: Remove large files to comply with GitHub size limit
+[33ma3045a1[m HEAD@{3}: commit: Release Version
+[33md78d969[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{4}: commit (merge): Release Final Version
+[33m81a1781[m HEAD@{5}: commit: BackUp code
+[33m84489ee[m HEAD@{6}: commit: Release new version
+[33mace7a04[m HEAD@{7}: commit: Release new vesion
+[33m1824ffe[m HEAD@{8}: pull origin master: Fast-forward
+[33md034422[m HEAD@{9}: commit (merge): Resolve mergo conflict in DishDAO.java
+[33mb3ee558[m HEAD@{10}: commit: New Update in Menu
+[33mdfdf404[m[33m ([m[1;31morigin/tongquan[m[33m)[m HEAD@{11}: pull origin master: Fast-forward
+[33mb14f2fd[m[33m ([m[1;31morigin/test[m[33m, [m[1;32mtest[m[33m)[m HEAD@{12}: pull origin master: Fast-forward
+[33ma74361f[m HEAD@{13}: checkout: moving from test to master
+[33mb14f2fd[m[33m ([m[1;31morigin/test[m[33m, [m[1;32mtest[m[33m)[m HEAD@{14}: checkout: moving from master to test
+[33ma74361f[m HEAD@{15}: commit: Release New Update
+[33m13a8dfc[m HEAD@{16}: commit: Menu Update
+[33mb7086b7[m HEAD@{17}: checkout: moving from master to master
+[33mb7086b7[m HEAD@{18}: commit: New Update
+[33mbe1fc78[m HEAD@{19}: commit: Update new Interface
+[33mf44e096[m HEAD@{20}: commit: Update Employee Tab in Management System
+[33m1a80a19[m HEAD@{21}: commit: Update effect for task bar
+[33m3850221[m HEAD@{22}: checkout: moving from 3850221b23ed244dfb704bcc40d6df0003887e01 to master
+[33m3850221[m HEAD@{23}: checkout: moving from 714d128bd074ccd0ed6034edc0f0072d60d80186 to origin/master
+[33m714d128[m HEAD@{24}: commit: Update mouse event for table and menu tab
+[33m3850221[m HEAD@{25}: checkout: moving from 1b8c98c97e6ef33186df24f5f4d579ae39c00722 to origin/master
+[33m1b8c98c[m HEAD@{26}: checkout: moving from master to origin/sqlsever
+[33m3850221[m HEAD@{27}: reset: moving to HEAD
+[33m3850221[m HEAD@{28}: commit: More Interface Function
+[33m2a80be0[m HEAD@{29}: commit: More function for Table and Menu Tab
+[33m5f13a6f[m HEAD@{30}: commit (initial): Umi Izakaya Project
+[33md78d969[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{0}: reset: moving to HEAD~1
+[33ma3045a1[m HEAD@{1}: reset: moving to HEAD~1
+[33m7b4e78f[m HEAD@{2}: commit: Remove large files to comply with GitHub size limit
+[33ma3045a1[m HEAD@{3}: commit: Release Version
+[33md78d969[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{4}: commit (merge): Release Final Version
+[33m81a1781[m HEAD@{5}: commit: BackUp code
+[33m84489ee[m HEAD@{6}: commit: Release new version
+[33mace7a04[m HEAD@{7}: commit: Release new vesion
+[33m1824ffe[m HEAD@{8}: pull origin master: Fast-forward
+[33md034422[m HEAD@{9}: commit (merge): Resolve mergo conflict in DishDAO.java
+[33mb3ee558[m HEAD@{10}: commit: New Update in Menu
+[33mdfdf404[m[33m ([m[1;31morigin/tongquan[m[33m)[m HEAD@{11}: pull origin master: Fast-forward
+[33mb14f2fd[m[33m ([m[1;31morigin/test[m[33m, [m[1;32mtest[m[33m)[m HEAD@{12}: pull origin master: Fast-forward
+[33ma74361f[m HEAD@{13}: checkout: moving from test to master
+[33mb14f2fd[m[33m ([m[1;31morigin/test[m[33m, [m[1;32mtest[m[33m)[m HEAD@{14}: checkout: moving from master to test
+[33ma74361f[m HEAD@{15}: commit: Release New Update
+[33m13a8dfc[m HEAD@{16}: commit: Menu Update
+[33mb7086b7[m HEAD@{17}: checkout: moving from master to master
+[33mb7086b7[m HEAD@{18}: commit: New Update
+[33mbe1fc78[m HEAD@{19}: commit: Update new Interface
+[33mf44e096[m HEAD@{20}: commit: Update Employee Tab in Management System
+[33m1a80a19[m HEAD@{21}: commit: Update effect for task bar
+[33m3850221[m HEAD@{22}: checkout: moving from 3850221b23ed244dfb704bcc40d6df0003887e01 to master
+[33m3850221[m HEAD@{23}: checkout: moving from 714d128bd074ccd0ed6034edc0f0072d60d80186 to origin/master
+[33m714d128[m HEAD@{24}: commit: Update mouse event for table and menu tab
+[33m3850221[m HEAD@{25}: checkout: moving from 1b8c98c97e6ef33186df24f5f4d579ae39c00722 to origin/master
+[33m1b8c98c[m HEAD@{26}: checkout: moving from master to origin/sqlsever
+[33m3850221[m HEAD@{27}: reset: moving to HEAD
+[33m3850221[m HEAD@{28}: commit: More Interface Function
+[33m2a80be0[m HEAD@{29}: commit: More function for Table and Menu Tab
+[33m5f13a6f[m HEAD@{30}: commit (initial): Umi Izakaya Project

@@ -1,5 +1,8 @@
 package data_access_object;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,6 +10,8 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -14,6 +19,7 @@ import javax.swing.JOptionPane;
 
 import database.JDBCUtil;
 import model.Bill;
+import model.DetailReceipt;
 import model.Dish;
 
 public class BillDAO {
@@ -46,8 +52,14 @@ public class BillDAO {
                         rs.getDate("time"),
                         rs.getDouble("payment")
                 );
-                map.put(bill.getBillID(), bill);
+                
+                List<DetailReceipt> details = DetailReceiptDAO.getDetailReceiptList(bill.getBillID());
+                for (DetailReceipt detail : details) {
+                    bill.addDetail(detail);
+                }
+
                 list.add(bill);
+                map.put(bill.getBillID(), bill);
             }
 
         } catch (Exception e) {
@@ -108,5 +120,66 @@ public class BillDAO {
             e.printStackTrace();
         }
         return null;
+    }
+    
+    public static void printReceiptToFile(String billID) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("DetailReceipt.txt"))) {
+            DetailReceiptDAO detailDAO = new DetailReceiptDAO();
+            DishDAO dishDAO = new DishDAO();
+
+            List<DetailReceipt> detailList = detailDAO.getDetailReceiptList(billID);
+            
+            Map<String, Dish> dishMap = DishDAO.map;
+
+            writer.write("=========================================================\n");
+            writer.write("                    HÓA ĐƠN BÁN HÀNG                     \n");
+            writer.write("=========================================================\n");
+            writer.write("	    Mã hóa đơn: " + billID + "\n");
+            writer.write("---------------------------------------------------------\n");
+            writer.write(String.format("%-40s %-5s %10s%n", "Mặt hàng", "SL", "T.Tiền"));
+
+            double total = 0;
+            for (DetailReceipt detail : detailList) {
+                Dish dish = dishMap.get(detail.getDishID());
+                if (dish != null) {
+                    double totalPrice = dish.getDishPrice() * detail.getDishQuantity();
+                    total += totalPrice;
+                    writer.write(String.format("%-40s %-5d %,10.2f%n",
+                            dish.getDishName(), detail.getDishQuantity(), totalPrice));
+                }
+            }
+
+            writer.write("---------------------------------------------------------\n");
+            writer.write(String.format("%57s%n", String.format("Tổng tiền: %,.2f", total)));
+            writer.write("=========================================================\n");
+            writer.write("           ありがとうございました！またお会いしましょう！             \r\n"
+            		+ "            Cảm ơn quý khách! Hẹn gặp lại!               ");
+            
+            JOptionPane.showMessageDialog(null, "Đã xuất hóa đơn chi tiết thành công!");
+            
+            System.out.println("Hóa đơn đã được lưu vào file DetailReceipt.txt\n");
+            System.out.println("Để in hóa đơn trực tiếp từ file ta làm theo cách sau:\n");
+            System.out.println("Đối với Windows đã kết nối với máy in -> mở CMD và chạy: notepad /p DetailReceipt.txt\n");
+
+            int response = JOptionPane.showConfirmDialog(null,
+                    "Bạn có muốn xem hóa đơn?", "Mở hóa đơn",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+            if (response == JOptionPane.YES_OPTION) {
+                openBillFile();
+            }
+        } catch (IOException e) {
+            System.err.println("Lỗi khi ghi file: " + e.getMessage());
+        }
+    }
+    
+    public static void openBillFile() {
+        try {
+        	ProcessBuilder pb = new ProcessBuilder("notepad", "DetailReceipt.txt");
+        	pb.start();
+            System.out.println("Đã mở hóa đơn trong Notepad.");
+        } catch (IOException e) {
+            System.err.println("Lỗi khi mở file: " + e.getMessage());
+        }
     }
 }

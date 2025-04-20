@@ -307,4 +307,22 @@ public class StaffDAO {
 		deleteStaffToDatabase(staff, conn);
 		addStaffToDatabase(newStaff, conn);
 	}
+	
+	public static List<String> getStaffNamesFromDatabase() {
+        List<String> staffList = new ArrayList<>();
+        staffList.add("Tất cả"); // Tùy chọn gửi cho tất cả nhân viên
+
+        try (Connection conn = JDBCUtil.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT fullName FROM staff")) {
+
+            while (rs.next()) {
+            	staffList.add(rs.getString("fullName"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return staffList;
+    }
 }

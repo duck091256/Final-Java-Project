@@ -7,6 +7,8 @@ public class Dish {
 	private int quantity;
 	private String dishCategory;
 	private String dishImage;
+	
+	public Dish() {}
 
 	public Dish(String dishID, String dishName, double dishPrice, String dishCategory, String dishImage) {
 		super();

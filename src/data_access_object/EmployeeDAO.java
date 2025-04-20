@@ -2,10 +2,13 @@ package data_access_object;
 
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JOptionPane;
 
@@ -196,4 +199,22 @@ public class EmployeeDAO {
 		return ketQua > 0;
 	}
 	
+	public static List<String> getEmployeeNames() {
+        List<String> employeeList = new ArrayList<>();
+        employeeList.add("Tất cả"); // Tùy chọn gửi cho tất cả nhân viên
+
+        try (Connection con = JDBCUtil.getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT name FROM Employee")) {
+
+            while (rs.next()) {
+                employeeList.add(rs.getString("name"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return employeeList;
+    }
+
 }

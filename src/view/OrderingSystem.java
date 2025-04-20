@@ -23,6 +23,8 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
 import fx.*;
+import test.EnhancedChatClient;
+import test.EnhancedChatServer;
 import controller.*;
 
 public class OrderingSystem extends JFrame {
@@ -45,7 +47,16 @@ public class OrderingSystem extends JFrame {
     private Boolean checkTabExist1 = true, checkTabExist2 = true;
     private RoundedLabelEffect rlbl_menu, rlbl_table;
     private Boolean checkTabTable = false, checkTabMenu = true;
+    private JLabel lbl_infor_Employee;
+    private String username = "Employee";
 
+    public void setAccountInformation(String Rusername) {
+        this.username = Rusername;
+        
+        if (lbl_infor_Employee != null) {
+        	lbl_infor_Employee.setText(Rusername);
+        }
+    }
 	/**
 	 * Launch the application.
 	 */
@@ -69,6 +80,9 @@ public class OrderingSystem extends JFrame {
 		contentPane.setBorder(BorderFactory.createLineBorder(new Color(45, 61, 75), 5));
 		setContentPane(contentPane);
 		controller = new OperatingSystemController();
+		
+		// Khởi chạy server trong 1 thread riêng
+        new Thread(() -> EnhancedChatServer.main(null)).start();
 		
 		// Thêm ảnh nền
 		ImageIcon icon = new ImageIcon(getClass().getResource("/image/Order_Interface.png"));
@@ -155,15 +169,46 @@ public class OrderingSystem extends JFrame {
 			}
 		});
 		
+		lbl_infor_Employee = new JLabel(username);
+		lbl_infor_Employee.setForeground(new Color(255, 255, 255));
+		lbl_infor_Employee.setFont(new Font("Arial", Font.PLAIN, 16));
+		lbl_infor_Employee.setBounds(786, 11, 78, 21);
+		contentPane.add(lbl_infor_Employee);
+		
 		contentPane.add(rlbl_table);
 		contentPane.add(rlbl_menu);
 
 		JLabel lblExit = new JLabel("");
-		lblExit.setBounds(873, -1, 27, 40);
+		lblExit.setBounds(873, 2, 27, 40);
 		contentPane.add(lblExit);
 		lblExit.setBackground(new Color(240, 240, 240));
 		lblExit.setIcon(new ImageIcon(OrderingSystem.class.getResource("/icon/icons8-logout-20.png")));
 		controller.exit(lblExit);
+		
+		JPanel panel_contain_chat_icon = new JPanel();
+        panel_contain_chat_icon.setBounds(742, 4, 35, 35);
+        panel_contain_chat_icon.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        contentPane.add(panel_contain_chat_icon);
+        panel_contain_chat_icon.setLayout(null);
+		
+		JLabel lbl_chat_icon = new JLabel("");
+		lbl_chat_icon.setBounds(3, 3, 30, 30);
+        panel_contain_chat_icon.add(lbl_chat_icon);
+        lbl_chat_icon.setForeground(new Color(255, 255, 255));
+        lbl_chat_icon.setBackground(new Color(255, 255, 255));
+        lbl_chat_icon.setIcon(new ImageIcon(ManagementSystem.class.getResource("/icon/icons8-chat-30.png")));
+        
+        // Khi click vào lblChat, mở cửa sổ chat
+        lbl_chat_icon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // Khởi chạy client trong thread riêng
+                new Thread(() -> {
+                    EnhancedChatClient.main(new String[]{username});
+                }).start();
+
+            }
+        });
 		
 		/* * * * Khu trái * * * */
 		cardLayoutLeft = new CardLayout();

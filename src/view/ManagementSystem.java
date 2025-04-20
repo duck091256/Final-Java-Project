@@ -3,6 +3,7 @@ package view;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Point;
+import java.awt.Toolkit;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,6 +14,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JWindow;
 import javax.swing.ListSelectionModel;
@@ -26,9 +28,16 @@ import javax.swing.table.DefaultTableModel;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import data_access_object.BillDAO;
+import data_access_object.DetailReceiptDAO;
 import data_access_object.DishDAO;
 import data_access_object.RankingStaffDAO;
 import data_access_object.StaffDAO;
@@ -36,14 +45,21 @@ import data_access_object.TableDAO;
 import database.JDBCUtil;
 import fx.*;
 import model.Bill;
+import model.DetailReceipt;
 import model.Dish;
 import model.RankingStaff;
+import model.SalesData;
 import model.Staff;
 import model.Table;
 import service.ExportBill;
 import service.Ordering;
 import service.Payment;
 import service.RatingCalculation;
+import service.SalesAnalyzer;
+import test.ChatClients;
+import test.ChatServer;
+import test.EnhancedChatClient;
+import test.EnhancedChatServer;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
@@ -57,6 +73,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -65,6 +82,7 @@ import java.util.List;
 import java.util.Map;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 
 import javax.swing.JLabel;
@@ -101,7 +119,7 @@ public class ManagementSystem extends JFrame {
     private boolean isPanelResized_2 = false; // Trạng thái kích thước của lbl_down_up_2
     private boolean isPanelResized_1 = false; // Trạng thái kích thước của lbl_down_up_1
     private JLabel dishImage, lbl_table_image;
-    private JPanel panel_setting;
+    private JPanel panel_setting, panel_graph;
     private JPanel floorPanel, panel_image;
     public static Map<Integer, Integer> tableCount = TableDAO.numOfTableByFloor();
     public static int tableCountFloor1 = tableCount.getOrDefault(1, 0), tableCountFloor2 = tableCount.getOrDefault(2, 0), dishCount = DishDAO.countRows();
@@ -132,7 +150,18 @@ public class ManagementSystem extends JFrame {
     private JTextField tf_floorStay;
     private JTextField tf_tableNum;
     private JTextField tf_Respond;
-    private JTextField tf_clientNum;
+    private JLabel lbl_receipt_is_sold, lbl_number_receipt_is_sold, lbl_receipt_is_serving, lbl_number_receipt_is_serving, lbl_coin;
+    private JLabel lbl_inforEmployee;
+    private String username = "Admin";
+
+    public void setAccountInformation(String Rusername) {
+        this.username = Rusername;
+        
+        if (lbl_inforEmployee != null) {
+        	lbl_inforEmployee.setText(Rusername);
+        }
+    }
+    
     /**
      * Launch the application.
      */
@@ -179,6 +208,9 @@ public class ManagementSystem extends JFrame {
         setBounds(100, 100, 1366, 768);
         setLocationRelativeTo(null);
         
+    	// Khởi chạy server trong 1 thread riêng
+        new Thread(() -> EnhancedChatServer.main(null)).start();
+        
         // Tạo contentPane
         contentPane = new JPanel();
         contentPane.setBackground(new Color(240, 240, 240));
@@ -198,10 +230,51 @@ public class ManagementSystem extends JFrame {
         panel_contain_logo_and_task_bar.add(panel_down);
         panel_down.setLayout(null);
         
+        lbl_overall = new JLabel("Tổng quan");
+        lbl_overall.setForeground(Color.WHITE);
+        lbl_overall.setFont(new Font("Arial", Font.PLAIN, 18));
+        lbl_overall.setBounds(47, 29, 100, 21);
+        panel_down.add(lbl_overall);
+        
+        // Sự kiện di chuột đến, đi và nhấn
+        lbl_overall.addMouseListener(new MouseAdapter() {
+        	@Override
+        	public void mouseEntered(MouseEvent e) {
+        		lbl_overall.setFont(new Font("Arial", Font.BOLD, 18));
+        		lbl_overall.setForeground(new Color(255, 255, 255));
+        	}
+        	
+        	@Override
+        	public void mouseExited(MouseEvent e) {
+        		if (overallCheckStatus) {
+        			lbl_overall.setFont(new Font("Arial", Font.PLAIN, 18));
+        			lbl_overall.setForeground(new Color(255, 255, 255));
+        		}
+        	}
+        	
+        	@Override
+        	public void mouseClicked(MouseEvent e) {
+        		cardLayout.show(panel_contain_CardLayout, "Overall");
+//        		switch_CardLayout_for_menu.show(panel_contain_switch_CardLayout_for_menu, "TableModeForMenu");
+        		changeBoldToPlain(lbl_dish, lbl_table, lbl_bill, lbl_employee);
+        		lbl_overall.setFont(new Font("Arial", Font.BOLD, 18));
+        		lbl_overall.setForeground(new Color(255, 255, 255));
+                overallCheckStatus = false;
+                dishCheckStatus = true;
+        		tableCheckStatus = true;
+        		billCheckStatus = true;
+        		employeeCheckStatus = true;
+        		
+        		loadReceiptsData();
+
+        		refreshChart();	
+        	}
+        });
+        
         lbl_dish = new JLabel("Thực đơn");
         lbl_dish.setForeground(Color.WHITE);
         lbl_dish.setFont(new Font("Arial", Font.PLAIN, 18));
-        lbl_dish.setBounds(55, 29, 89, 21);
+        lbl_dish.setBounds(171, 29, 89, 21);
         panel_down.add(lbl_dish);
         
         // Sự kiện di chuột đến, đi và nhấn
@@ -238,7 +311,7 @@ public class ManagementSystem extends JFrame {
         lbl_table = new JLabel("Phòng bàn");
         lbl_table.setForeground(Color.WHITE);
         lbl_table.setFont(new Font("Arial", Font.PLAIN, 18));
-        lbl_table.setBounds(172, 29, 108, 21);
+        lbl_table.setBounds(288, 29, 108, 21);
         panel_down.add(lbl_table);
         
         // Sự kiện di chuột đến, đi và nhấn
@@ -275,7 +348,7 @@ public class ManagementSystem extends JFrame {
         lbl_bill = new JLabel("Hóa đơn");
         lbl_bill.setForeground(Color.WHITE);
         lbl_bill.setFont(new Font("Arial", Font.PLAIN, 18));
-        lbl_bill.setBounds(296, 29, 89, 21);
+        lbl_bill.setBounds(412, 29, 89, 21);
         panel_down.add(lbl_bill);
         
         // Sự kiện di chuột đến, đi và nhấn
@@ -311,8 +384,33 @@ public class ManagementSystem extends JFrame {
         lbl_employee = new JLabel("Nhân viên");
         lbl_employee.setForeground(Color.WHITE);
         lbl_employee.setFont(new Font("Arial", Font.PLAIN, 18));
-        lbl_employee.setBounds(407, 29, 89, 21);
+        lbl_employee.setBounds(523, 29, 89, 21);
         panel_down.add(lbl_employee);
+        
+        JPanel panel_contain_chat_icon = new JPanel();
+        panel_contain_chat_icon.setBounds(1230, 20, 40, 40);
+        panel_contain_chat_icon.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+        panel_down.add(panel_contain_chat_icon);
+        panel_contain_chat_icon.setLayout(null);
+        
+        JLabel lbl_chat_icon = new JLabel("");
+        lbl_chat_icon.setBounds(5, 5, 30, 30);
+        panel_contain_chat_icon.add(lbl_chat_icon);
+        lbl_chat_icon.setForeground(new Color(255, 255, 255));
+        lbl_chat_icon.setBackground(new Color(255, 255, 255));
+        lbl_chat_icon.setIcon(new ImageIcon(ManagementSystem.class.getResource("/icon/icons8-chat-30.png")));
+        
+        // Khi click vào lblChat, mở cửa sổ chat
+        lbl_chat_icon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // Khởi chạy client trong thread riêng
+                new Thread(() -> {
+                    EnhancedChatClient.main(new String[]{username});
+                }).start();
+
+            }
+        });
         
         // Sự kiện di chuột đến, đi và nhấn
         lbl_employee.addMouseListener(new MouseAdapter() {
@@ -367,7 +465,7 @@ public class ManagementSystem extends JFrame {
         panel_up.add(lbl_setting);
         controller.OperatingSystemController.exit(lbl_setting);
         
-        JLabel lbl_inforEmployee = new JLabel("0905xxx000");
+        lbl_inforEmployee = new JLabel(username);
         lbl_inforEmployee.setFont(new Font("Arial", Font.PLAIN, 18));
         lbl_inforEmployee.setBounds(1128, 25, 106, 31);
         panel_up.add(lbl_inforEmployee);
@@ -381,6 +479,7 @@ public class ManagementSystem extends JFrame {
         panel_contain_CardLayout = new JPanel(cardLayout);
         panel_contain_CardLayout.setBackground(new Color(255, 255, 255));
         panel_contain_CardLayout.setBounds(0, 154, 1283, 546);
+        panel_contain_CardLayout.add(createOverallPanel(), "Overall");
         panel_contain_CardLayout.add(createMenuPanel(), "Menu");
         panel_contain_CardLayout.add(createFloorPanel(), "Floor");
         panel_contain_CardLayout.add(createReceiptPanel(), "Receipt");
@@ -389,8 +488,58 @@ public class ManagementSystem extends JFrame {
         contentPane.add(panel_contain_CardLayout);
     }
     
+    public static void openChatWindow() {
+        JFrame chatFrame = new JFrame("Tin nhắn");
+        chatFrame.setSize(300, 400);
+        chatFrame.getContentPane().setLayout(new BorderLayout());
+        chatFrame.setLocationRelativeTo(null);
+
+        List<String> employees = StaffDAO.getStaffNamesFromDatabase();
+        employees.add(0, "Tất cả"); 
+
+        JComboBox<String> cbEmployees = new JComboBox<>(employees.toArray(new String[0]));
+
+        JPanel panelTop = new JPanel();
+        panelTop.add(new JLabel("Gửi đến:"));
+        panelTop.add(cbEmployees);
+
+        JTextArea txtChat = new JTextArea(15, 25);
+        txtChat.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(txtChat);
+
+        JTextField txtInput = new JTextField(20);
+        JButton btnSend = new JButton("Gửi");
+
+        JPanel panelBottom = new JPanel();
+        panelBottom.add(txtInput);
+        panelBottom.add(btnSend);
+
+        ChatClients client = new ChatClients("Quản lý");
+
+        btnSend.addActionListener(e -> {
+            String selectedEmployee = (String) cbEmployees.getSelectedItem();
+            String message = txtInput.getText().trim();
+            if (!message.isEmpty()) {
+                if (selectedEmployee.equals("Tất cả")) {
+                    client.sendMessage("Tất cả: [Thông báo chung] " + message);
+                } else {
+                    client.sendMessage(selectedEmployee + ": [Gửi đến " + selectedEmployee + "] " + message);
+                }
+                txtChat.append("Bạn: " + message + "\n");
+                txtInput.setText("");
+            }
+        });
+
+        chatFrame.getContentPane().add(panelTop, BorderLayout.NORTH);
+        chatFrame.getContentPane().add(scrollPane, BorderLayout.CENTER);
+        chatFrame.getContentPane().add(panelBottom, BorderLayout.SOUTH);
+        chatFrame.setVisible(true);
+    }
+    
     private void changeBoldToPlain(JLabel lbl_dish,JLabel lbl_table,JLabel lbl_bill,JLabel lbl_employee) {
     	// Đổi tất cả label thành PLAIN trước mới kiểm tra rồi chuyển thành BOLD
+    	lbl_overall.setFont(new Font("Arial", Font.PLAIN, 18));
+		lbl_overall.setForeground(new Color(255, 255, 255));
 		this.lbl_dish.setFont(new Font("Arial", Font.PLAIN, 18));
 		this.lbl_dish.setForeground(new Color(255, 255, 255));
 		this.lbl_table.setFont(new Font("Arial", Font.PLAIN, 18));
@@ -399,8 +548,11 @@ public class ManagementSystem extends JFrame {
 		this.lbl_bill.setForeground(new Color(255, 255, 255));
 		this.lbl_employee.setFont(new Font("Arial", Font.PLAIN, 18));
 		this.lbl_employee.setForeground(new Color(255, 255, 255));
-
-    	if (isBold(lbl_dish)) {
+		
+		if (isBold(lbl_overall)) {
+			lbl_overall.setFont(new Font("Arial", Font.PLAIN, 18));
+			lbl_overall.setForeground(new Color(255, 255, 255));
+		} else if (isBold(lbl_dish)) {
     		this.lbl_dish.setFont(new Font("Arial", Font.PLAIN, 18));
     		this.lbl_dish.setForeground(new Color(255, 255, 255));
     	} else if (isBold(lbl_table)) {
@@ -418,6 +570,175 @@ public class ManagementSystem extends JFrame {
     private static boolean isBold(JLabel label) {
         Font font = label.getFont();
         return (font.getStyle() & Font.BOLD) != 0;
+    }
+    
+    private JPanel createOverallPanel() {
+    	JPanel overallPanel = new JPanel();
+    	overallPanel.setBackground(new Color(255, 255, 255));
+    	overallPanel.setLayout(null);
+    	
+    	panel_graph = new JPanel();
+    	panel_graph.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_graph.setBounds(38, 220, 806, 300);
+    	panel_graph.setBackground(Color.WHITE);
+    	overallPanel.add(panel_graph);
+    	panel_graph.setLayout(null);
+    	
+    	// Nhúng vào JPanel panel_graph
+    	JFreeChart chart = createAndShowChart();
+
+    	// Tạo ChartPanel để chứa biểu đồ
+    	ChartPanel chartPanel = new ChartPanel(chart);
+    	chartPanel.setOpaque(false);
+    	chartPanel.setBackground(Color.WHITE);
+
+    	int margin = 25; // Khoảng cách từ viền JPanel đến biểu đồ
+    	chartPanel.setPreferredSize(new Dimension(panel_graph.getWidth() - 2 * margin, panel_graph.getHeight() - 2 * margin));
+    	chartPanel.setBorder(BorderFactory.createEmptyBorder(margin, margin, margin, margin)); // Thêm khoảng trống bên trong
+
+    	panel_graph.removeAll();
+    	panel_graph.setLayout(new BorderLayout());
+    	panel_graph.add(chartPanel, BorderLayout.CENTER);
+
+    	// Cập nhật lại giao diện
+    	panel_graph.revalidate();
+    	panel_graph.repaint();
+   	
+    	JPanel panel_selling_result = new JPanel();
+    	panel_selling_result.setBounds(38, 34, 806, 133);
+    	panel_selling_result.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_selling_result.setBackground(Color.white);
+    	overallPanel.add(panel_selling_result);
+    	panel_selling_result.setLayout(null);
+    	
+    	JLabel lbl_sell_result = new JLabel("KẾT QUẢ BÁN HÀNG");
+    	lbl_sell_result.setFont(new Font("Arial", Font.BOLD, 16));
+    	lbl_sell_result.setBounds(30, 11, 165, 33);
+    	panel_selling_result.add(lbl_sell_result);
+    	
+    	lbl_receipt_is_sold = new JLabel("0 đơn đã bán ");
+    	lbl_receipt_is_sold.setForeground(new Color(84, 84, 84));
+    	lbl_receipt_is_sold.setFont(new Font("Arial", Font.BOLD, 16));
+    	lbl_receipt_is_sold.setBounds(94, 44, 165, 33);
+    	panel_selling_result.add(lbl_receipt_is_sold);
+    	
+    	lbl_number_receipt_is_sold = new JLabel("0");
+    	lbl_number_receipt_is_sold.setForeground(new Color(0, 74, 173));
+    	lbl_number_receipt_is_sold.setFont(new Font("Arial", Font.PLAIN, 23));
+    	lbl_number_receipt_is_sold.setBounds(94, 68, 92, 33);
+    	panel_selling_result.add(lbl_number_receipt_is_sold);
+    	
+    	lbl_coin = new JLabel("");
+    	lbl_coin.setIcon(new ImageIcon(ManagementSystem.class.getResource("/icon/icons8-coin-blue-50.png")));
+    	lbl_coin.setBounds(30, 55, 50, 50);
+    	panel_selling_result.add(lbl_coin);
+    	
+    	JLabel lbl_strike = new JLabel("");
+    	lbl_strike.setIcon(new ImageIcon(ManagementSystem.class.getResource("/icon/icons8-hot-price-blue-50.png")));
+    	lbl_strike.setBounds(482, 55, 50, 50);
+    	panel_selling_result.add(lbl_strike);
+    	
+    	lbl_receipt_is_serving = new JLabel("0 đơn đang phục vụ");
+    	lbl_receipt_is_serving.setForeground(new Color(84, 84, 84));
+    	lbl_receipt_is_serving.setFont(new Font("Arial", Font.BOLD, 16));
+    	lbl_receipt_is_serving.setBounds(546, 44, 207, 33);
+    	panel_selling_result.add(lbl_receipt_is_serving);
+    	
+    	lbl_number_receipt_is_serving = new JLabel("0");
+    	lbl_number_receipt_is_serving.setForeground(new Color(126, 217, 87));
+    	lbl_number_receipt_is_serving.setFont(new Font("Arial", Font.PLAIN, 23));
+    	lbl_number_receipt_is_serving.setBounds(546, 68, 92, 33);
+    	panel_selling_result.add(lbl_number_receipt_is_serving);
+    	
+    	JLabel lbl_barrier = new JLabel("|");
+    	lbl_barrier.setForeground(new Color(217, 217, 217));
+    	lbl_barrier.setFont(new Font("Agency FB", Font.PLAIN, 60));
+    	lbl_barrier.setBounds(376, 38, 15, 78);
+    	panel_selling_result.add(lbl_barrier);
+    	
+    	JPanel panel_filter_1 = new JPanel();
+    	panel_filter_1.setLayout(null);
+    	panel_filter_1.setBorder(new RoundedBorderPanel(15, new Color(45, 61, 75), 1));
+    	panel_filter_1.setBackground(Color.WHITE);
+    	panel_filter_1.setBounds(899, 34, 342, 486);
+    	overallPanel.add(panel_filter_1);
+    	
+    	overallPanel.revalidate();
+    	overallPanel.repaint();
+    	
+    	return overallPanel;
+    }
+    
+    public void refreshChart() {
+        if (panel_graph == null) {
+            System.out.println("panel_graph is null, cannot refresh chart.");
+            return; // Không làm gì nếu panel_graph chưa được khởi tạo
+        }
+
+        panel_graph.removeAll(); // Xóa biểu đồ cũ
+        JFreeChart chart = createAndShowChart(); // Tạo biểu đồ mới
+        ChartPanel chartPanel = new ChartPanel(chart);
+    	chartPanel.setOpaque(false);
+    	chartPanel.setBackground(Color.WHITE);
+        
+        int margin = 25; // Khoảng cách từ viền JPanel đến biểu đồ
+    	chartPanel.setPreferredSize(new Dimension(panel_graph.getWidth() - 2 * margin, panel_graph.getHeight() - 2 * margin));
+    	chartPanel.setBorder(BorderFactory.createEmptyBorder(margin, margin, margin, margin));
+        panel_graph.add(chartPanel);
+        panel_graph.revalidate();
+        panel_graph.repaint();
+    }
+
+    private static JFreeChart createAndShowChart() {
+    	// Tải dữ liệu cho detail receipt
+    	DetailReceiptDAO.loadData();
+    	
+        // Lấy dữ liệu top 10 món ăn bán chạy
+        List<SalesData> topDishes = SalesAnalyzer.getTop10BestSellingDishes();
+        System.out.println(topDishes);
+
+        // Tạo dataset cho biểu đồ
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        for (SalesData dish : topDishes) {
+            dataset.addValue(dish.getAvgMonthlyRevenue(), "Doanh số trung bình (tháng)", dish.getDishName());
+            dataset.addValue(dish.getRevenueToday(), "Doanh số hôm nay", dish.getDishName());
+        }
+
+        // Tạo biểu đồ cột hàng ghép
+        JFreeChart chart = ChartFactory.createBarChart(
+                "HÀNG BÁN CHẠY",   // Tiêu đề
+                "Món ăn",          // Nhãn trục x
+                "Doanh thu (Nghìn VNĐ)", // Nhãn trục y
+                dataset,
+                PlotOrientation.HORIZONTAL, // Hiển thị theo chiều ngang
+                true, true, false);
+
+        // Tuỳ chỉnh màu sắc tươi tắn hơn
+        CategoryPlot plot = chart.getCategoryPlot();
+        BarRenderer renderer = (BarRenderer) plot.getRenderer();
+        renderer.setSeriesPaint(0, new Color(60, 179, 113)); // Màu xanh lá
+        renderer.setSeriesPaint(1, new Color(30, 144, 255)); // Màu xanh dương
+        renderer.setBarPainter(new StandardBarPainter()); // Giảm hiệu ứng 3D
+        renderer.setItemMargin(0.2); // Mở rộng khoảng cách giữa các cột
+
+        // Hiển thị giá trị trên cột
+        renderer.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator());
+        renderer.setBaseItemLabelsVisible(true);
+
+        // Định dạng trục X (VNĐ)
+        NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
+        yAxis.setNumberFormatOverride(new DecimalFormat("#,### VNĐ"));
+
+        return chart;
+    }
+    
+    public void loadReceiptsData() {
+        int totalReceipts = BillDAO.list.size(); // Lấy tổng số đơn hàng từ danh sách hóa đơn
+        lbl_receipt_is_sold.setText(String.valueOf(totalReceipts) + " đơn đã bán");
+        lbl_number_receipt_is_sold.setText(String.valueOf(totalReceipts));
+        if (totalReceipts != 0) {
+        	lbl_coin.setIcon(new ImageIcon(ManagementSystem.class.getResource("/icon/icons8-coin-50.png")));
+        }
     }
     
     private JPanel createMenuPanel() {
@@ -965,25 +1286,41 @@ public class ManagementSystem extends JFrame {
 		}
 	}
     
-    private void addNewDish() {
-        dishCount++;
-        Dish dishes = DishDAO.accessDish(dishCount - 1);
-        addDishToMenu("Món " + dishes.getDishName(), dishes);
-        
-        // Làm mới giao diện
-        menu.revalidate(); 
-        menu.repaint();
-        
+	private void addNewDish() {
+	    // Kiểm tra nếu chưa có món nào
+	    if (dishCount <= 0) {
+	        throw new IllegalArgumentException("Không có món ăn nào để thêm!");
+	    }
+
+	    dishCount++;
+	    Dish dishes = DishDAO.accessDish(dishCount - 1);
+	    if (dishes == null) {
+	        throw new NullPointerException("Không tìm thấy món ăn trong cơ sở dữ liệu!");
+	    }
+
+	    addDishToMenu("Món " + dishes.getDishName(), dishes);
+
+	    // Làm mới giao diện
+	    menu.revalidate();
+	    menu.repaint();
+
         addNewDishInMiniMenu();
-        DishDAO.addDishToDatabase(dishes, JDBCUtil.getConnection());
-    }
+
+	}
     
     private void showLargeImage(String imagePath) {
-        // Sử dụng JWindow thay vì Window
+        // Tạo JWindow để làm lớp nền đen
+        JWindow backgroundLayer = new JWindow();
+        backgroundLayer.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+        backgroundLayer.setBackground(new Color(0, 0, 0, 150)); // Màu đen, độ trong suốt 150/255
+        backgroundLayer.setVisible(true);
+
+        // Tạo JWindow hiển thị ảnh
         JWindow imageFrame = new JWindow();
         ImageIcon icon = new ImageIcon(imagePath);
         JLabel imageLabel = new JLabel(icon);
 
+        // Resize ảnh cho phù hợp
         Image img = icon.getImage();
         Image scaledImg = img.getScaledInstance(700, 500, Image.SCALE_SMOOTH);
         imageLabel.setIcon(new ImageIcon(scaledImg));
@@ -993,12 +1330,20 @@ public class ManagementSystem extends JFrame {
         imageFrame.setLocationRelativeTo(null);
         imageFrame.setVisible(true);
 
-        imageLabel.addMouseListener(new MouseAdapter() {
+        // Đóng cửa sổ khi click vào ảnh hoặc nền đen
+        MouseAdapter closeListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 imageFrame.dispose();
+                backgroundLayer.dispose();
             }
-        });
+        };
+
+        // Đóng khi click vào ảnh
+        imageLabel.addMouseListener(closeListener);
+
+        // Đóng khi click vào nền đen
+        backgroundLayer.addMouseListener(closeListener);
     }
 
     private void addDishToMenu(String dishName, Dish dishes) {
@@ -1024,7 +1369,39 @@ public class ManagementSystem extends JFrame {
         JPdish.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-            	showLargeImage(tmp); 
+            	
+            	String dishId = dishes.getDishID();
+            	String dishName = dishes.getDishName();
+            	Double dishPrice = dishes.getDishPrice();
+            	String dishCategory = dishes.getDishCategory();
+            	
+            	tf_dish_id.setText(dishId);
+				tf_dish_name.setText(dishName);
+				tf_dish_price.setText(dishPrice.toString());
+				tf_dish_category.setText(dishCategory);
+				
+				String imagePath = dishes.getDishImage(); // Lấy đường dẫn ảnh từ đối tượng
+
+            	showLargeImage(imagePath);
+
+				if (imagePath == null || imagePath.isEmpty()) {
+					dishImage.setText("Chưa cập nhật ảnh");
+					dishImage.setIcon(null);
+				} else {
+					// Lấy đường dẫn thư mục gốc của dự án
+					String basePath = System.getProperty("user.dir");
+
+					// Kết hợp thư mục gốc với đường dẫn tương đối từ cơ sở dữ liệu
+					File imageFile = new File(basePath, imagePath);
+
+					if (imageFile.exists()) {
+						dishImage.setText("");
+						ImageIcon imageIcon = new ImageIcon(imageFile.getAbsolutePath());
+						dishImage.setIcon(imageIcon);
+					} else {
+						dishImage.setText("Ảnh không tồn tại");
+					}
+				}
             }
         });
 
@@ -1060,6 +1437,14 @@ public class ManagementSystem extends JFrame {
         JTextField tfPrice = new JTextField();
         JTextField tfCategory = new JTextField();
         JLabel lblImagePath = new JLabel("Chưa chọn hình ảnh");
+        
+        int numberOfDishes = DishDAO.countRows();
+        int nextDishID = numberOfDishes + 1;
+        if (numberOfDishes < 100) {
+        	tfDishID.setText("#D0" + nextDishID);
+        } else {
+        	tfDishID.setText("#D" + nextDishID);
+        }
         
         JPanel panel = new JPanel(new GridLayout(6, 2));
         panel.add(new JLabel("Mã Món Ăn:"));
@@ -1533,6 +1918,9 @@ public class ManagementSystem extends JFrame {
     	        } else {
     	            JOptionPane.showMessageDialog(null, "Vui lòng chọn bàn để thanh toán!", "Thông báo", JOptionPane.WARNING_MESSAGE);
     	        }
+    	        
+    	        BillDAO.loadData();
+    	        DetailReceiptDAO.loadData(); 
     	        
                 // Làm mới giao diện
                 floorPanel.revalidate();
@@ -2132,22 +2520,45 @@ public class ManagementSystem extends JFrame {
     }
     
     private void addNewDishInMiniMenu() {
+        // Kiểm tra món ăn hợp lệ
         Dish dishes = DishDAO.accessDish(dishCount - 1);
+        if (dishes == null) {
+            throw new NullPointerException("Không tìm thấy món ăn!");
+        }
+
         addDishToMiniMenu("Món " + dishes.getDishName(), dishes);
-        
+
         // Làm mới giao diện
-        miniMenu.revalidate(); 
+        miniMenu.revalidate();
         miniMenu.repaint();
     }
     
     private void addDishToMiniMenu(String dishName, Dish dishes) {
-    	
-    	// Lấy đối tượng bàn được chọn ở bảng
-    	int selectedRow = FloorTable.getSelectedRow();
-    	
-    	String tableId = FloorTable.getValueAt(selectedRow, 0).toString();
-    	Table table = TableDAO.getTable(tableId);
-    	
+        // Lấy đối tượng bàn được chọn ở bảng
+        int selectedRow = FloorTable.getSelectedRow();
+        
+        // Kiểm tra nếu không có dòng nào được chọn -> ném ngoại lệ
+        if (selectedRow == -1) {
+            throw new IllegalArgumentException("Không có bàn nào được chọn!");
+        }
+
+        // Lấy tableId từ dòng đã chọn
+        String tableId = FloorTable.getValueAt(selectedRow, 0).toString();
+        
+        // Kiểm tra tableId có hợp lệ không
+        if (tableId == null || tableId.isEmpty()) {
+            throw new IllegalStateException("ID bàn không hợp lệ.");
+        }
+
+        // Lấy thông tin bàn từ TableDAO
+        Table table = TableDAO.getTable(tableId);
+
+        // Kiểm tra nếu table không tồn tại
+        if (table == null) {
+            throw new NullPointerException("Không tìm thấy thông tin bàn với ID: " + tableId);
+        }
+
+        // Tiếp tục xử lý món ăn
         String tmp = dishes.getDishImage();
         
         JPanel JPdish = new JPanel();
@@ -2710,6 +3121,42 @@ public class ManagementSystem extends JFrame {
     	lbl_receipt.setBounds(34, 0, 107, 64);
     	receiptPanel.add(lbl_receipt);
     	
+    	RoundedLabel lbl_add = new RoundedLabel("+  Thêm mới");
+    	lbl_add.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_add.setForeground(Color.BLACK);
+    	lbl_add.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_add.setCornerRadius(10);
+    	lbl_add.setBackground(new Color(129, 199, 132));
+    	lbl_add.setBounds(743, 15, 130, 41);
+    	receiptPanel.add(lbl_add);
+
+    	lbl_add.addMouseListener(new MouseAdapter() {
+    		@Override
+    		public void mouseEntered(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+    		
+    		@Override
+    		public void mouseExited(MouseEvent e) {
+    			lbl_add.setForeground(Color.BLACK);
+    			lbl_add.setBackground(new Color(129, 199, 132));
+    		}
+    		
+    		@Override
+    		public void mousePressed(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(33, 136, 56));
+    			addReceipt();
+    		}
+    		
+    		@Override
+    		public void mouseReleased(MouseEvent e) {
+    			lbl_add.setForeground(Color.WHITE);
+    			lbl_add.setBackground(new Color(40, 167, 69));
+    		}
+		});
+    	
     	RoundedLabel lbl_export = new RoundedLabel("Xuất thành file Excel");
     	lbl_export.setHorizontalAlignment(SwingConstants.CENTER);
     	lbl_export.setForeground(Color.BLACK);
@@ -2747,65 +3194,50 @@ public class ManagementSystem extends JFrame {
     		}
 		});
     	
-    	RoundedLabel lbl_add = new RoundedLabel("+  Thêm mới");
-    	lbl_add.setHorizontalAlignment(SwingConstants.CENTER);
-    	lbl_add.setForeground(Color.BLACK);
-    	lbl_add.setFont(new Font("Arial", Font.PLAIN, 16));
-    	lbl_add.setCornerRadius(10);
-    	lbl_add.setBackground(new Color(129, 199, 132));
-    	lbl_add.setBounds(930, 15, 130, 41);
-    	receiptPanel.add(lbl_add);
+    	RoundedLabel lbl_show_detail_receipt = new RoundedLabel("Xem hóa đơn chi tiết");
+    	lbl_show_detail_receipt.setHorizontalAlignment(SwingConstants.CENTER);
+    	lbl_show_detail_receipt.setForeground(Color.BLACK);
+    	lbl_show_detail_receipt.setFont(new Font("Arial", Font.PLAIN, 16));
+    	lbl_show_detail_receipt.setCornerRadius(10);
+    	lbl_show_detail_receipt.setBackground(new Color(129, 199, 132));
+    	lbl_show_detail_receipt.setBounds(896, 15, 164, 41);
+    	receiptPanel.add(lbl_show_detail_receipt);
     	
-    	lbl_add.addMouseListener(new MouseAdapter() {
+    	lbl_show_detail_receipt.addMouseListener(new MouseAdapter() {
     		@Override
     		public void mouseEntered(MouseEvent e) {
-    			lbl_add.setForeground(Color.WHITE);
-    			lbl_add.setBackground(new Color(40, 167, 69));
+    			lbl_show_detail_receipt.setForeground(Color.WHITE);
+    			lbl_show_detail_receipt.setBackground(new Color(40, 167, 69));
     		}
     		
     		@Override
     		public void mouseExited(MouseEvent e) {
-    			lbl_add.setForeground(Color.BLACK);
-    			lbl_add.setBackground(new Color(129, 199, 132));
+    			lbl_show_detail_receipt.setForeground(Color.BLACK);
+    			lbl_show_detail_receipt.setBackground(new Color(129, 199, 132));
     		}
     		
     		@Override
     		public void mousePressed(MouseEvent e) {
-    			lbl_add.setForeground(Color.WHITE);
-    			lbl_add.setBackground(new Color(33, 136, 56));
-    			addReceipt();
+    			lbl_show_detail_receipt.setForeground(Color.WHITE);
+    			lbl_show_detail_receipt.setBackground(new Color(33, 136, 56));
+    			
+    			int selectedRow = ReceiptTable.getSelectedRow();
+    	    	
+    	        if (selectedRow < 0) {
+    	            // Nếu không có dòng nào được chọn, thông báo cho người dùng
+    	            JOptionPane.showMessageDialog(null, "Vui lòng chọn hóa đơn.");
+    	            return; // Dừng việc thực thi phương thức
+    	        }
+    	        
+    	        String billId = ReceiptTable.getValueAt(selectedRow, 0).toString();
+    	        
+    			BillDAO.printReceiptToFile(billId);
     		}
     		
     		@Override
     		public void mouseReleased(MouseEvent e) {
-    			lbl_add.setForeground(Color.WHITE);
-    			lbl_add.setBackground(new Color(40, 167, 69));
-    		}
-		});
-    	
-    	lbl_add.addMouseListener(new MouseAdapter() {
-    		@Override
-    		public void mouseEntered(MouseEvent e) {
-    			lbl_add.setForeground(Color.WHITE);
-    			lbl_add.setBackground(new Color(40, 167, 69));
-    		}
-    		
-    		@Override
-    		public void mouseExited(MouseEvent e) {
-    			lbl_add.setForeground(Color.BLACK);
-    			lbl_add.setBackground(new Color(129, 199, 132));
-    		}
-    		
-    		@Override
-    		public void mousePressed(MouseEvent e) {
-    			lbl_add.setForeground(Color.WHITE);
-    			lbl_add.setBackground(new Color(33, 136, 56));
-    		}
-    		
-    		@Override
-    		public void mouseReleased(MouseEvent e) {
-    			lbl_add.setForeground(Color.WHITE);
-    			lbl_add.setBackground(new Color(40, 167, 69));
+    			lbl_show_detail_receipt.setForeground(Color.WHITE);
+    			lbl_show_detail_receipt.setBackground(new Color(40, 167, 69));
     		}
 		});
     	

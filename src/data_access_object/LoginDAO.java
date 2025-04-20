@@ -8,12 +8,12 @@ import database.JDBCUtil;
 
 public class LoginDAO {
 
-    public boolean authenticateUser(String username, String password) {
+    public String getUserRole(String username, String password) {
 
         try {
         	Connection connection = JDBCUtil.getConnection();
 
-            String sql = "SELECT * FROM admin WHERE userName = ? AND password = ?";
+            String sql = "SELECT role FROM users WHERE username = ? AND password = ?";
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, username);
             statement.setString(2, password);
@@ -21,13 +21,13 @@ public class LoginDAO {
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
-                return true;
+            	return resultSet.getString("role"); // "admin" hoặc "staff"
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
         
-        return false;
+        return null;
     }
 }

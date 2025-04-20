@@ -52,8 +52,8 @@ public class DishDAO {
                 map.put(dish.getDishID(), dish);
                 list.add(dish);
                 
-                CloneData();
             }
+            CloneData();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,29 +61,7 @@ public class DishDAO {
     }
     
     public static void CloneData() {
-        originalList = new ArrayList<>();
-
-        String sql = "SELECT * FROM dish";
-
-        try (Connection conn = JDBCUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                Dish dish = new Dish(
-                        rs.getString("dishID"),
-                        rs.getString("dishName"),
-                        rs.getDouble("dishPrice"),
-                        rs.getString("dishCategory"),
-                        rs.getString("dishImage")
-                );
-                originalList.add(dish);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        originalList = new ArrayList<>(list); // Tạo bản sao của danh sách
     }
 
     public static List<Dish> handleSort(boolean isChecked) {
@@ -103,8 +81,11 @@ public class DishDAO {
     }
     
     public static Dish accessDish(int index) {
-    	Dish dish = list.get(index);
-    	return dish;
+        if (index < 0 || index >= list.size()) {
+            System.out.println("Index món ăn không hợp lệ: " + index);
+            return null;
+        }
+        return list.get(index);
     }
 
 	public static boolean addDish(Dish dish) {

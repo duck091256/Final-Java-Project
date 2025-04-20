@@ -10,4 +10,7 @@ module Final_Java_Project {
 	requires jfreechart;
     requires poi;
 	requires poi.ooxml;
+	requires okhttp3;
+	requires org.json;
+	requires java.net.http;
 }

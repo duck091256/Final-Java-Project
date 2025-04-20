@@ -80,17 +80,25 @@ public class MainController {
                     return;
                 }
                 
-                boolean isAuthenticated = next.authenticateUser(username, password);
+                String role = next.getUserRole(username, password);
 
-                if (isAuthenticated) {
+                if (role != null) {
                     JOptionPane.showMessageDialog(null, "Đăng nhập thành công!");
-                    
+
                     JFrame currentFrame = (JFrame) SwingUtilities.getWindowAncestor(lbl_Login);
                     currentFrame.dispose();
 
-                    ManagementSystem managementSystem = new ManagementSystem();
-                    managementSystem.setUndecorated(true);
-                    managementSystem.setVisible(true);
+                    if (role.equalsIgnoreCase("admin")) {
+                        ManagementSystem managementSystem = new ManagementSystem();
+                        managementSystem.setAccountInformation(username);
+                        managementSystem.setUndecorated(true);
+                        managementSystem.setVisible(true);
+                    } else if (role.equalsIgnoreCase("staff")) {
+                        OrderingSystem orderingSystem = new OrderingSystem();
+                        orderingSystem.setAccountInformation(username); // nếu có
+                        orderingSystem.setUndecorated(true);
+                        orderingSystem.setVisible(true);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(null, "Đăng nhập thất bại!");
                 }

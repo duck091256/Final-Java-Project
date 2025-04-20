@@ -1,12 +1,15 @@
 package model;
 
 import java.sql.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Bill {
 	private String billID;
 	private boolean wasPay;
 	private Date time;
 	private Double payment;
+	private List<DetailReceipt> detailList = new ArrayList<>();
 
 	public Bill(String billID, boolean wasPay, Date time, Double payment) {
 		super();
@@ -46,5 +49,13 @@ public class Bill {
 	
 	public void setPayment(Double payment) {
 		this.payment = payment;
+	}
+	
+	public List<DetailReceipt> getDetailList() {
+	    return detailList;
+	}
+
+	public void addDetail(DetailReceipt detail) {
+	    detailList.add(detail);
 	}
 }
